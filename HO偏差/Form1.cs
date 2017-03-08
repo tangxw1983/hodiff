@@ -38,7 +38,7 @@ namespace HO偏差
         private const double DD_D_INC = 0.001;      // 方差求导增量
         private const double EE_STEP = 0.01;
         private const double DD_STEP = 0.01;
-        private const int PRECISION = 7;
+        private const int PRECISION = 5;
 
         private Thread _t_d, _t_o;
 
@@ -70,6 +70,11 @@ namespace HO偏差
                     }), 0, r, Math.Pow(10, -PRECISION)), PRECISION);
                 }
                 return _cached_gauss_result[r];
+
+                //return Math.Round(0.5 - common.Math.Calculus.integrate(new common.Math.Calculus.Func(delegate(double y)
+                //{
+                //    return Math.Exp(-y * y / 2) / Math.Sqrt(2 * Math.PI);
+                //}), 0, x, Math.Pow(10, -PRECISION)), PRECISION);
             }
         }
 
@@ -110,12 +115,57 @@ namespace HO偏差
                 });
                 common.Math.Calculus.Func f_top3 = new common.Math.Calculus.Func(delegate(double x)
                 {
-                    double rv = r(x);
-                    return Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]) * (Math.Exp(-rv) + Math.Exp(-rv) * rv + Math.Exp(-rv) * rv * rv / 2);
+                    double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
+
+                    //              
+                    //          不选A  - “选2 Tree”   V(A)*2T
+                    //       /
+                    //  root                              +                  不选B - “选1 Tree”
+                    //       \                                            / 
+                    //          选A  -  “选1 Tree”  (1-V(A))*1T    --- 
+                    //                                                    \ 
+                    //                                                       选B - 连乘
+                    //2T(n-2) = 1
+                    //2T(d) = V(d)*2T(d+1)+(1-V(d))*1T(d+1)
+                    //1T(n-1) = 1
+                    //1T(d) = V(d)*1T(d+1)+(1-V(d))*LS(d+1)
+                    //LS(n-1) = V(n-1)
+                    //LS(d) = V(d)*LS(d+1)
+                    // 目标计算2T(0)
+
+                    double[] V = new double[CNT - 1];   // 我赢i的概率
+                    for (int j = 0; j < CNT; j++)
+                    {
+                        if (j < i)
+                            V[j] = 1 - this.gauss(ee[j], dd[j], x);
+                        else if (j > i)
+                            V[j - 1] = 1 - this.gauss(ee[j], dd[j], x);
+                        else // if (j == i)
+                            continue;
+                    }
+
+                    int n = CNT - 1;
+                    double _2T = (1 - V[n - 1]) * (1 - V[n - 2]);
+                    double _1T = 1 - V[n - 1];
+                    double _LS = 1;
+                    for (int j = n - 3; j >= 0; j--)
+                    {
+                        _LS *= V[j + 2];
+                        _1T = V[j + 1] * _1T + (1 - V[j + 1]) * _LS;
+                        _2T = V[j] * _2T + (1 - V[j]) * _1T;
+                    }
+                    _LS *= V[1];
+                    _1T = V[0] * _1T + (1 - V[0]) * _LS;
+                    _LS *= V[0];
+
+                    return gx * (_2T + _1T + _LS);
+
+                    //double rv = r(x);
+                    //return Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]) * (Math.Exp(-rv) + Math.Exp(-rv) * rv + Math.Exp(-rv) * rv * rv / 2);
                 });
 
-                p1[i] = common.Math.Calculus.integrate(f_top1, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION));
-                p3[i] = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION));
+                p1[i] = common.Math.Calculus.integrate(f_top1, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 4);
+                p3[i] = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 4);
             }
         }
 
@@ -135,36 +185,40 @@ namespace HO偏差
                             this.btn正向过程.Text = "停止";
                         }));
 
-                        // 生成期望
-                        double[] ee = new double[CNT];
-                        for (int i = 0; i < CNT; i++) ee[i] = rand.NextDouble();
-                        double thd_e = ee.OrderByDescending(x => x).Skip(2).First();
-                        for (int i = 0; i < CNT; i++) ee[i] -= thd_e;
+                        //// 生成期望
+                        //double[] ee = new double[CNT];
+                        //for (int i = 0; i < CNT; i++) ee[i] = rand.NextDouble();
+                        //double thd_e = ee.OrderByDescending(x => x).Skip(2).First();
+                        //for (int i = 0; i < CNT; i++) ee[i] -= thd_e;
 
-                        // 生成方差
-                        double[] dd = new double[CNT];
-                        for (int i = 0; i < CNT; i++) dd[i] = rand.NextDouble() + 0.5;
-                        double thd_d = dd[0];
-                        for (int i = 0; i < CNT; i++)
-                        {
-                            if (ee[i] == 0)
-                            {
-                                thd_d = dd[i];
-                                break;
-                            }
-                        }
-                        for (int i = 0; i < CNT; i++) dd[i] /= thd_d;
+                        //// 生成方差
+                        //double[] dd = new double[CNT];
+                        //for (int i = 0; i < CNT; i++) dd[i] = rand.NextDouble() + 0.5;
+                        //double thd_d = dd[0];
+                        //for (int i = 0; i < CNT; i++)
+                        //{
+                        //    if (ee[i] == 0)
+                        //    {
+                        //        thd_d = dd[i];
+                        //        break;
+                        //    }
+                        //}
+                        //for (int i = 0; i < CNT; i++) dd[i] /= thd_d;
 
                         //double[] ee = new double[] { 0.5290, 0.3828, -0.3311, 0.4858, 0.5788, 0.0668, 0.4494, 0.4878, 0.0000, 0.5260, 0.5960, 0.4944, 0.4302, 0.6743 };
                         //double[] dd = new double[] { 0.1984, 0.4951, 0.5684, 0.1490, 0.1336, 0.6521, 0.1595, 0.2534, 1.0000, 0.1970, 0.1868, 0.2022, 0.4422, 0.0973 };
+
+                        double[] ee = new double[] { 0.00801567780227197,0,-0.621224622997094,0.0313196089264562,-0.0943667865797723,-0.0915018185467934,-0.334689835242317,-0.426669478149465,-0.493784849761885,-0.840716855060643,-0.577426177718409,-0.258726100557822,-0.783315496883968,-0.315391631012499 };
+                        double[] dd = new double[] { 0.572739966948158, 1, 0.872813330886322, 0.359513914114434, 0.538356241925828, 0.337836391363014, 0.907819085464169, 0.952665051689518, 0.746272143819065, 0.697850654308121, 0.636612974592895, 0.435706391326388, 0.989832968601233, 0.364285053896771 };
+
                         rows["事实期望"] = ee;
                         rows["事实方差"] = dd;
 
                         // 计算事实概率
                         double[] p1, p3;
                         this.calc(ee, dd, out p1, out p3);
-                        rows["TOP1概率"] = this.normalize(p1, 1);
-                        rows["TOP3概率"] = this.normalize(p3, 3);
+                        rows["TOP1概率"] = p1; // this.normalize(p1, 1);
+                        rows["TOP3概率"] = p3; // this.normalize(p3, 3);
 
                         // 生成随机SP
                         double[] b1 = new double[CNT];
@@ -338,11 +392,14 @@ namespace HO偏差
                             double[] p1, p3;
                             this.calc(ee, dd, out p1, out p3);
 
-                            double rr = this.calc_rr(s1, p1, s3, p3);
+                            //double rr = this.calc_rr(s1, p1, s3, p3);
                             double maxr1 = double.MinValue, minr1 = double.MaxValue, maxr3 = double.MinValue, minr3 = double.MaxValue;
                             int maxr1_i = -1, minr1_i = -1, maxr3_i = -1, minr3_i = -1;
+                            double[] r1 = new double[CNT], r3 = new double[CNT];
                             for (int i = 0; i < CNT; i++)
                             {
+                                r1[i] = s1[i] * p1[i];
+                                r3[i] = s3[i] * p3[i];
                                 if (s1[i] * p1[i] > maxr1)
                                 {
                                     maxr1 = s1[i] * p1[i];
@@ -465,6 +522,13 @@ namespace HO偏差
             Clipboard.SetData(DataFormats.Text, string.Format("double[] ee = new double[] {{ {0} }};\r\ndouble[] dd = new double[] {{ {1} }}",
                 string.Join(",", lves.Select(x => x.Text).ToArray()),
                 string.Join(",", lvds.Select(x => x.Text).ToArray())));
+        }
+
+        private void btnCopyEEDD_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetData(DataFormats.Text, string.Format("double[] ee = new double[] {{ {0} }};\r\ndouble[] dd = new double[] {{ {1} }}",
+                string.Join(",", rows["事实期望"].Select(x => x.ToString()).ToArray()),
+                string.Join(",", rows["事实方差"].Select(x => x.ToString()).ToArray())));
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HO偏差", "HO偏差\HO偏差.csproj", "{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Math.Calculus", "Math.Calculus\Math.Calculus.csproj", "{033B816F-BF82-4A56-87A5-13DA07A92C50}"

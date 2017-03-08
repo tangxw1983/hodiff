@@ -68,9 +68,28 @@ namespace common.Math
                     _t[this.GetIndex(i, j)] = value;
                 }
             }
+
+            public override string ToString()
+            {
+                string[] lines = new string[_scale];
+                for (int i = 0; i < _scale; i++)
+                {
+                    lines[i] = "";
+                    for (int j = 0; j < _scale; j++)
+                    {
+                        lines[i] += string.Format("{0:0.0000000000} ", this[i, j]);
+                    }
+                }
+                return "\n" + string.Join("\n", lines);
+            }
         }
 
         public static double integrate(Func f, double a, double b, double e)
+        {
+            return integrate(f, a, b, e, 2);
+        }
+
+        public static double integrate(Func f, double a, double b, double e, int min_step)
         {
             t t = new t();
             int n, k, i, m;
@@ -94,7 +113,7 @@ namespace common.Math
                 h /= 2;
                 n *= 2;
                 k += 1;
-            } while (System.Math.Abs(t[0, m] - t[0, m - 1]) > e);
+            } while (k < min_step || System.Math.Abs(t[0, m] - t[0, m - 1]) > e);
 
             return t[0, m];
         }
