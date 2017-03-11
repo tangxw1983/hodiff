@@ -36,8 +36,9 @@ namespace HO偏差
         private const int CNT = 14;
         private const double EE_D_INC = 0.001;     // 期望求导增量
         private const double DD_D_INC = 0.001;      // 方差求导增量
-        private const double EE_STEP = 0.01;
-        private const double DD_STEP = 0.01;
+        private const double EE_STEP = 0.1;
+        private const double DD_STEP = 0.1;
+        private const double STEP_DECAY = 0.1;     // 步长衰减
         private const int PRECISION = 5;
 
         private Thread _t_d, _t_o;
@@ -113,7 +114,7 @@ namespace HO偏差
 
                     //return gx * rv;
                 });
-                common.Math.Calculus.Func f_top3 = new common.Math.Calculus.Func(delegate(double x)
+                common.Math.Calculus.MultiFunc f_top3 = new common.Math.Calculus.MultiFunc(delegate(double x)
                 {
                     double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
 
@@ -158,14 +159,18 @@ namespace HO偏差
                     _1T = V[0] * _1T + (1 - V[0]) * _LS;
                     _LS *= V[0];
 
-                    return gx * (_2T + _1T + _LS);
+                    return new common.Math.vector(new double[] { gx * _LS, gx * (_2T + _1T + _LS) });
 
                     //double rv = r(x);
                     //return Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]) * (Math.Exp(-rv) + Math.Exp(-rv) * rv + Math.Exp(-rv) * rv * rv / 2);
                 });
 
-                p1[i] = common.Math.Calculus.integrate(f_top1, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 4);
-                p3[i] = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 4);
+                //p1[i] = common.Math.Calculus.integrate(f_top1, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 5);
+                //p3[i] = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 5);
+
+                common.Math.vector pv = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
+                p1[i] = pv[0];
+                p3[i] = pv[1];
             }
         }
 
@@ -185,31 +190,31 @@ namespace HO偏差
                             this.btn正向过程.Text = "停止";
                         }));
 
-                        //// 生成期望
-                        //double[] ee = new double[CNT];
-                        //for (int i = 0; i < CNT; i++) ee[i] = rand.NextDouble();
-                        //double thd_e = ee.OrderByDescending(x => x).Skip(2).First();
-                        //for (int i = 0; i < CNT; i++) ee[i] -= thd_e;
+                        // 生成期望
+                        double[] ee = new double[CNT];
+                        for (int i = 0; i < CNT; i++) ee[i] = rand.NextDouble();
+                        double thd_e = ee.OrderByDescending(x => x).Skip(2).First();
+                        for (int i = 0; i < CNT; i++) ee[i] -= thd_e;
 
-                        //// 生成方差
-                        //double[] dd = new double[CNT];
-                        //for (int i = 0; i < CNT; i++) dd[i] = rand.NextDouble() + 0.5;
-                        //double thd_d = dd[0];
-                        //for (int i = 0; i < CNT; i++)
-                        //{
-                        //    if (ee[i] == 0)
-                        //    {
-                        //        thd_d = dd[i];
-                        //        break;
-                        //    }
-                        //}
-                        //for (int i = 0; i < CNT; i++) dd[i] /= thd_d;
+                        // 生成方差
+                        double[] dd = new double[CNT];
+                        for (int i = 0; i < CNT; i++) dd[i] = rand.NextDouble() + 0.5;
+                        double thd_d = dd[0];
+                        for (int i = 0; i < CNT; i++)
+                        {
+                            if (ee[i] == 0)
+                            {
+                                thd_d = dd[i];
+                                break;
+                            }
+                        }
+                        for (int i = 0; i < CNT; i++) dd[i] /= thd_d;
 
                         //double[] ee = new double[] { 0.5290, 0.3828, -0.3311, 0.4858, 0.5788, 0.0668, 0.4494, 0.4878, 0.0000, 0.5260, 0.5960, 0.4944, 0.4302, 0.6743 };
                         //double[] dd = new double[] { 0.1984, 0.4951, 0.5684, 0.1490, 0.1336, 0.6521, 0.1595, 0.2534, 1.0000, 0.1970, 0.1868, 0.2022, 0.4422, 0.0973 };
 
-                        double[] ee = new double[] { 0.00801567780227197,0,-0.621224622997094,0.0313196089264562,-0.0943667865797723,-0.0915018185467934,-0.334689835242317,-0.426669478149465,-0.493784849761885,-0.840716855060643,-0.577426177718409,-0.258726100557822,-0.783315496883968,-0.315391631012499 };
-                        double[] dd = new double[] { 0.572739966948158, 1, 0.872813330886322, 0.359513914114434, 0.538356241925828, 0.337836391363014, 0.907819085464169, 0.952665051689518, 0.746272143819065, 0.697850654308121, 0.636612974592895, 0.435706391326388, 0.989832968601233, 0.364285053896771 };
+                        //double[] ee = new double[] { 0.00801567780227197,0,-0.621224622997094,0.0313196089264562,-0.0943667865797723,-0.0915018185467934,-0.334689835242317,-0.426669478149465,-0.493784849761885,-0.840716855060643,-0.577426177718409,-0.258726100557822,-0.783315496883968,-0.315391631012499 };
+                        //double[] dd = new double[] { 0.572739966948158, 1, 0.872813330886322, 0.359513914114434, 0.538356241925828, 0.337836391363014, 0.907819085464169, 0.952665051689518, 0.746272143819065, 0.697850654308121, 0.636612974592895, 0.435706391326388, 0.989832968601233, 0.364285053896771 };
 
                         rows["事实期望"] = ee;
                         rows["事实方差"] = dd;
@@ -330,6 +335,19 @@ namespace HO偏差
             return d;
         }
 
+        private double calc_plc_r(double r, double[] bp, double[] wp, int[] c)
+        {
+            double o_sum = 0;
+            double p_ls = 1;
+            double tmp = (r - bp[c[0]] - bp[c[1]] - bp[c[2]]) / 3;
+            for (int k = 0; k < 3; k++)
+            {
+                o_sum += tmp / bp[c[k]];
+                p_ls *= wp[c[k]];
+            }
+            return o_sum * p_ls;
+        }
+
         private void btn逆向过程_Click(object sender, EventArgs e)
         {
             this.btn逆向过程.Enabled = false;
@@ -353,6 +371,30 @@ namespace HO偏差
 
                         double[] ee = new double[CNT];
                         double[] dd = new double[CNT];
+
+                        double rr1 = 1 / s1.Sum(x => 1 / x);
+
+                        // 计算PLC赔付率
+                        IOrderedEnumerable<double> sorted_s3 = s3.OrderBy(x => x);
+                        double o3 = sorted_s3.Skip(2).First();
+                        double a = 3 * (o3 - 1) / (3 * (o3 - 1) + 1) * sorted_s3.Take(2).Sum(x => 1 / (3 * (x - 1)));
+                        double b = sorted_s3.Skip(2).Sum(x => 1 / (3 * (x - 1) + 1));
+                        double rr3 = (a + 1) / (a + b);
+
+                        // 计算投注比例
+                        double po3 = (1 - rr3) / ((sorted_s3.Skip(2).Sum(x => 1 / (3 * x - 2)) - 1) * (3 * o3 - 2));
+                        double[] ph3 = new double[CNT];
+                        for (int i = 0; i < CNT; i++)
+                        {
+                            if (s3[i] <= o3)
+                            {
+                                ph3[i] = po3 * (o3 - 1) / (s3[i] - 1); 
+                            }
+                            else
+                            {
+                                ph3[i] = po3 * (3 * o3 - 2) / (3 * s3[i] - 2);
+                            }
+                        }
 
                         // 设定top1第3的项期望=0，方差=1
                         double trd_s1 = s1.OrderBy(x => x).Skip(2).First();
@@ -386,73 +428,130 @@ namespace HO偏差
                         }
 
                         double lastE = double.MaxValue;
-
-                        while (true)
+                        int[] dir_d_rr_ee = new int[CNT], dir_d_rr_dd = new int[CNT];
+                        for (int t = 0; ;t++ )
                         {
                             double[] p1, p3;
                             this.calc(ee, dd, out p1, out p3);
+                            double E = 0;
 
                             //double rr = this.calc_rr(s1, p1, s3, p3);
                             double maxr1 = double.MinValue, minr1 = double.MaxValue, maxr3 = double.MinValue, minr3 = double.MaxValue;
                             int maxr1_i = -1, minr1_i = -1, maxr3_i = -1, minr3_i = -1;
-                            double[] r1 = new double[CNT], r3 = new double[CNT];
+                            double[] r1 = new double[CNT], r3 = new double[CNT];  // 这个是每个马的回报率，非赔付率
                             for (int i = 0; i < CNT; i++)
                             {
                                 r1[i] = s1[i] * p1[i];
                                 r3[i] = s3[i] * p3[i];
-                                if (s1[i] * p1[i] > maxr1)
+                                if (r1[i] > maxr1)
                                 {
-                                    maxr1 = s1[i] * p1[i];
+                                    maxr1 = r1[i];
                                     maxr1_i = i;
                                 }
-                                if (s1[i] * p1[i] < minr1)
+                                if (r1[i] < minr1)
                                 {
-                                    minr1 = s1[i] * p1[i];
+                                    minr1 = r1[i];
                                     minr1_i = i;
                                 }
-                                if (s3[i] * p3[i] > maxr3)
+                                if (r3[i] > maxr3)
                                 {
-                                    maxr3 = s3[i] * p3[i];
+                                    maxr3 = r3[i];
                                     maxr3_i = i;
                                 }
-                                if (s3[i] * p3[i] < minr3)
+                                if (r3[i] < minr3)
                                 {
-                                    minr3 = s3[i] * p3[i];
+                                    minr3 = r3[i];
                                     minr3_i = i;
                                 }
                             }
-
+                            common.Math.Combination comb = new common.Math.Combination(CNT, 3);
+                            double[] cr3 = new double[comb.Length];
+                            for (int i = 0; i < comb.Length; i++)
+                            {
+                                int[] citem = comb.Combine(i);
+                                int cinx = comb.Index(citem);
+                                if (cinx != i)
+                                {
+                                    break;
+                                }
+                            }
+                                for (int i = 0; i < comb.Length; i++)
+                                {
+                                    cr3[i] = this.calc_plc_r(rr3, ph3, p3, comb.Combine(i));
+                                }
                             // 求对各个参数的梯度
-                            double E = 0;
                             double[] d_rr_ee = new double[CNT];
                             double[] d_rr_dd = new double[CNT];
                             for (int i = 0; i < CNT; i++)
                             {
-                                if (i == trd_inx) continue;
+                                // if (i == trd_inx) continue; 
                                 double[] tp1, tp3;
-                                
+
                                 ee[i] += EE_D_INC;
                                 this.calc(ee, dd, out tp1, out tp3);
-                                d_rr_ee[i] = (this.calc_rr(s1, tp1, s3, tp3) - rr) / EE_D_INC;
-                                E += d_rr_ee[i] * d_rr_ee[i];
+                                for (int j = 0; j < CNT; j++)
+                                {
+                                    d_rr_ee[i] += (tp1[j] * s1[j] - r1[j]) / EE_D_INC * (rr1 - r1[j]);
+                                }
+                                // 位置彩任意结果的赔付率靠近总体赔付率，
+                                // 任意结果的赔付率 = 赔率之和*概率之积
+                                for (int j = 0; j < comb.Length; j++)
+                                {
+                                    int[] c = comb.Combine(j);
+                                    // 计算调整梯度
+                                    d_rr_ee[i] += (this.calc_plc_r(rr3, ph3, tp3, c) - cr3[j]) / EE_D_INC * (rr3 - cr3[j]);
+                                }
                                 ee[i] -= EE_D_INC;
 
                                 dd[i] += DD_D_INC;
                                 this.calc(ee, dd, out tp1, out tp3);
-                                d_rr_dd[i] = (this.calc_rr(s1, tp1, s3, tp3) - rr) / DD_D_INC;
-                                E += d_rr_dd[i] * d_rr_dd[i];
+                                for (int j = 0; j < CNT; j++)
+                                {
+                                    d_rr_dd[i] += (tp1[j] * s1[j] - r1[j]) / DD_D_INC * (rr1 - r1[j]);
+                                }
+                                for (int j = 0; j < comb.Length; j++)
+                                {
+                                    int[] c = comb.Combine(j);
+                                    // 计算调整梯度
+                                    d_rr_dd[i] += (this.calc_plc_r(rr3, ph3, tp3, c) - cr3[j]) / DD_D_INC * (rr3 - cr3[j]);
+                                }
                                 dd[i] -= DD_D_INC;
                             }
 
                             // 调整各参数
                             for (int i = 0; i < CNT; i++)
                             {
-                                if (i == trd_inx) continue;
-                                ee[i] -= d_rr_ee[i] * EE_STEP;
-                                dd[i] -= d_rr_dd[i] * DD_STEP;
-                                if (dd[i] < 0.1) dd[i] = 0.1;
+                                // if (i == trd_inx) continue;
+                                if (d_rr_ee[i] > 0 && dir_d_rr_ee[i] >= 0)
+                                    dir_d_rr_ee[i]++;
+                                else if (d_rr_ee[i] < 0 && dir_d_rr_ee[i] <= 0)
+                                    dir_d_rr_ee[i]--;
+                                else
+                                    dir_d_rr_ee[i] = 0;
+
+                                if (d_rr_dd[i] > 0 && dir_d_rr_dd[i] >= 0)
+                                    dir_d_rr_dd[i]++;
+                                else if (d_rr_dd[i] < 0 && dir_d_rr_dd[i] <= 0)
+                                    dir_d_rr_dd[i]--;
+                                else
+                                    dir_d_rr_dd[i] = 0;
+
+                                ee[i] += Math.Tanh(d_rr_ee[i]) * EE_STEP / (1 + t * STEP_DECAY) * (1 + Math.Abs(dir_d_rr_ee[i]) * STEP_DECAY);
+                                dd[i] += Math.Tanh(d_rr_dd[i]) * DD_STEP / (1 + t * STEP_DECAY) * (1 + Math.Abs(dir_d_rr_dd[i]) * STEP_DECAY);
+                                if (dd[i] < 0.0001) dd[i] = 0.0001;
                             }
 
+                            // 调整之后再进行归一化
+                            for (int i = 0; i < CNT; i++)
+                            {
+                                if (i == trd_inx) continue;
+                                ee[i] = (ee[i] - ee[trd_inx]) / dd[trd_inx];
+                                dd[i] = dd[i] / dd[trd_inx];
+                            }
+                            ee[trd_inx] = 0;
+                            dd[trd_inx] = 1;
+
+                            E = r1.Sum(x => (x - rr1) * (x - rr1)) + cr3.Sum(x => (x - rr3) * (x - rr3));
                             this.Invoke(new MethodInvoker(delegate
                             {
                                 for (int i = 0; i < CNT; i++)
@@ -483,7 +582,7 @@ namespace HO偏差
                                 {
                                     lEs[i].Text = lEs[i - 1].Text;
                                 }
-                                lEs[0].Text = string.Format("{0:0.0000} | {1,10:0.0000}", E, rr);
+                                lEs[0].Text = string.Format("{2}: {0:0.0000} | {1:0.0000000}", E, 1 / (1 + t * STEP_DECAY), t);
                                 lpwSum.Text = string.Format("{0:0.0000}", p1.Sum() * 100);
                                 lppSum.Text = string.Format("{0:0.0000}", p3.Sum() * 100);
                             }));

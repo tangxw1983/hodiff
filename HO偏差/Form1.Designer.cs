@@ -244,7 +244,7 @@
             // 
             // btn逆向过程
             // 
-            this.btn逆向过程.Location = new System.Drawing.Point(854, 18);
+            this.btn逆向过程.Location = new System.Drawing.Point(646, 18);
             this.btn逆向过程.Margin = new System.Windows.Forms.Padding(4);
             this.btn逆向过程.Name = "btn逆向过程";
             this.btn逆向过程.Size = new System.Drawing.Size(112, 34);
@@ -256,7 +256,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(855, 63);
+            this.label2.Location = new System.Drawing.Point(647, 63);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(314, 36);
@@ -276,7 +276,7 @@
             this.listView1.Location = new System.Drawing.Point(18, 150);
             this.listView1.Margin = new System.Windows.Forms.Padding(4);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(814, 552);
+            this.listView1.Size = new System.Drawing.Size(610, 552);
             this.listView1.TabIndex = 2;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
@@ -325,7 +325,7 @@
             // lve1
             // 
             this.lve1.BackColor = System.Drawing.Color.White;
-            this.lve1.Location = new System.Drawing.Point(950, 204);
+            this.lve1.Location = new System.Drawing.Point(742, 204);
             this.lve1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve1.Name = "lve1";
             this.lve1.Size = new System.Drawing.Size(90, 18);
@@ -335,7 +335,7 @@
             // lve3
             // 
             this.lve3.BackColor = System.Drawing.Color.White;
-            this.lve3.Location = new System.Drawing.Point(950, 264);
+            this.lve3.Location = new System.Drawing.Point(742, 264);
             this.lve3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve3.Name = "lve3";
             this.lve3.Size = new System.Drawing.Size(90, 18);
@@ -345,7 +345,7 @@
             // lve4
             // 
             this.lve4.BackColor = System.Drawing.Color.White;
-            this.lve4.Location = new System.Drawing.Point(950, 294);
+            this.lve4.Location = new System.Drawing.Point(742, 294);
             this.lve4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve4.Name = "lve4";
             this.lve4.Size = new System.Drawing.Size(90, 18);
@@ -355,7 +355,7 @@
             // lve5
             // 
             this.lve5.BackColor = System.Drawing.Color.White;
-            this.lve5.Location = new System.Drawing.Point(950, 324);
+            this.lve5.Location = new System.Drawing.Point(742, 324);
             this.lve5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve5.Name = "lve5";
             this.lve5.Size = new System.Drawing.Size(90, 18);
@@ -365,7 +365,7 @@
             // lve6
             // 
             this.lve6.BackColor = System.Drawing.Color.White;
-            this.lve6.Location = new System.Drawing.Point(950, 354);
+            this.lve6.Location = new System.Drawing.Point(742, 354);
             this.lve6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve6.Name = "lve6";
             this.lve6.Size = new System.Drawing.Size(90, 18);
@@ -375,7 +375,7 @@
             // lve7
             // 
             this.lve7.BackColor = System.Drawing.Color.White;
-            this.lve7.Location = new System.Drawing.Point(950, 384);
+            this.lve7.Location = new System.Drawing.Point(742, 384);
             this.lve7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve7.Name = "lve7";
             this.lve7.Size = new System.Drawing.Size(90, 18);
@@ -385,7 +385,7 @@
             // lve8
             // 
             this.lve8.BackColor = System.Drawing.Color.White;
-            this.lve8.Location = new System.Drawing.Point(950, 414);
+            this.lve8.Location = new System.Drawing.Point(742, 414);
             this.lve8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve8.Name = "lve8";
             this.lve8.Size = new System.Drawing.Size(90, 18);
@@ -395,7 +395,7 @@
             // lve9
             // 
             this.lve9.BackColor = System.Drawing.Color.White;
-            this.lve9.Location = new System.Drawing.Point(950, 444);
+            this.lve9.Location = new System.Drawing.Point(742, 444);
             this.lve9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve9.Name = "lve9";
             this.lve9.Size = new System.Drawing.Size(90, 18);
@@ -405,7 +405,7 @@
             // lve10
             // 
             this.lve10.BackColor = System.Drawing.Color.White;
-            this.lve10.Location = new System.Drawing.Point(950, 474);
+            this.lve10.Location = new System.Drawing.Point(742, 474);
             this.lve10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve10.Name = "lve10";
             this.lve10.Size = new System.Drawing.Size(90, 18);
@@ -415,7 +415,7 @@
             // lve11
             // 
             this.lve11.BackColor = System.Drawing.Color.White;
-            this.lve11.Location = new System.Drawing.Point(950, 504);
+            this.lve11.Location = new System.Drawing.Point(742, 504);
             this.lve11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve11.Name = "lve11";
             this.lve11.Size = new System.Drawing.Size(90, 18);
@@ -425,7 +425,7 @@
             // lve2
             // 
             this.lve2.BackColor = System.Drawing.Color.White;
-            this.lve2.Location = new System.Drawing.Point(950, 234);
+            this.lve2.Location = new System.Drawing.Point(742, 234);
             this.lve2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve2.Name = "lve2";
             this.lve2.Size = new System.Drawing.Size(90, 18);
@@ -435,7 +435,7 @@
             // lve12
             // 
             this.lve12.BackColor = System.Drawing.Color.White;
-            this.lve12.Location = new System.Drawing.Point(950, 534);
+            this.lve12.Location = new System.Drawing.Point(742, 534);
             this.lve12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve12.Name = "lve12";
             this.lve12.Size = new System.Drawing.Size(90, 18);
@@ -445,7 +445,7 @@
             // lve13
             // 
             this.lve13.BackColor = System.Drawing.Color.White;
-            this.lve13.Location = new System.Drawing.Point(950, 564);
+            this.lve13.Location = new System.Drawing.Point(742, 564);
             this.lve13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve13.Name = "lve13";
             this.lve13.Size = new System.Drawing.Size(90, 18);
@@ -455,7 +455,7 @@
             // lve14
             // 
             this.lve14.BackColor = System.Drawing.Color.White;
-            this.lve14.Location = new System.Drawing.Point(950, 594);
+            this.lve14.Location = new System.Drawing.Point(742, 594);
             this.lve14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lve14.Name = "lve14";
             this.lve14.Size = new System.Drawing.Size(90, 18);
@@ -465,7 +465,7 @@
             // lvd1
             // 
             this.lvd1.BackColor = System.Drawing.Color.White;
-            this.lvd1.Location = new System.Drawing.Point(1048, 204);
+            this.lvd1.Location = new System.Drawing.Point(840, 204);
             this.lvd1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd1.Name = "lvd1";
             this.lvd1.Size = new System.Drawing.Size(90, 18);
@@ -475,7 +475,7 @@
             // lvd2
             // 
             this.lvd2.BackColor = System.Drawing.Color.White;
-            this.lvd2.Location = new System.Drawing.Point(1048, 234);
+            this.lvd2.Location = new System.Drawing.Point(840, 234);
             this.lvd2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd2.Name = "lvd2";
             this.lvd2.Size = new System.Drawing.Size(90, 18);
@@ -485,7 +485,7 @@
             // lvd3
             // 
             this.lvd3.BackColor = System.Drawing.Color.White;
-            this.lvd3.Location = new System.Drawing.Point(1048, 264);
+            this.lvd3.Location = new System.Drawing.Point(840, 264);
             this.lvd3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd3.Name = "lvd3";
             this.lvd3.Size = new System.Drawing.Size(90, 18);
@@ -495,7 +495,7 @@
             // lvd4
             // 
             this.lvd4.BackColor = System.Drawing.Color.White;
-            this.lvd4.Location = new System.Drawing.Point(1048, 294);
+            this.lvd4.Location = new System.Drawing.Point(840, 294);
             this.lvd4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd4.Name = "lvd4";
             this.lvd4.Size = new System.Drawing.Size(90, 18);
@@ -505,7 +505,7 @@
             // lvd5
             // 
             this.lvd5.BackColor = System.Drawing.Color.White;
-            this.lvd5.Location = new System.Drawing.Point(1048, 324);
+            this.lvd5.Location = new System.Drawing.Point(840, 324);
             this.lvd5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd5.Name = "lvd5";
             this.lvd5.Size = new System.Drawing.Size(90, 18);
@@ -515,7 +515,7 @@
             // lvd6
             // 
             this.lvd6.BackColor = System.Drawing.Color.White;
-            this.lvd6.Location = new System.Drawing.Point(1048, 354);
+            this.lvd6.Location = new System.Drawing.Point(840, 354);
             this.lvd6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd6.Name = "lvd6";
             this.lvd6.Size = new System.Drawing.Size(90, 18);
@@ -525,7 +525,7 @@
             // lvd7
             // 
             this.lvd7.BackColor = System.Drawing.Color.White;
-            this.lvd7.Location = new System.Drawing.Point(1048, 384);
+            this.lvd7.Location = new System.Drawing.Point(840, 384);
             this.lvd7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd7.Name = "lvd7";
             this.lvd7.Size = new System.Drawing.Size(90, 18);
@@ -535,7 +535,7 @@
             // lvd8
             // 
             this.lvd8.BackColor = System.Drawing.Color.White;
-            this.lvd8.Location = new System.Drawing.Point(1048, 414);
+            this.lvd8.Location = new System.Drawing.Point(840, 414);
             this.lvd8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd8.Name = "lvd8";
             this.lvd8.Size = new System.Drawing.Size(90, 18);
@@ -545,7 +545,7 @@
             // lvd9
             // 
             this.lvd9.BackColor = System.Drawing.Color.White;
-            this.lvd9.Location = new System.Drawing.Point(1048, 444);
+            this.lvd9.Location = new System.Drawing.Point(840, 444);
             this.lvd9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd9.Name = "lvd9";
             this.lvd9.Size = new System.Drawing.Size(90, 18);
@@ -555,7 +555,7 @@
             // lvd10
             // 
             this.lvd10.BackColor = System.Drawing.Color.White;
-            this.lvd10.Location = new System.Drawing.Point(1048, 474);
+            this.lvd10.Location = new System.Drawing.Point(840, 474);
             this.lvd10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd10.Name = "lvd10";
             this.lvd10.Size = new System.Drawing.Size(90, 18);
@@ -565,7 +565,7 @@
             // lvd11
             // 
             this.lvd11.BackColor = System.Drawing.Color.White;
-            this.lvd11.Location = new System.Drawing.Point(1048, 504);
+            this.lvd11.Location = new System.Drawing.Point(840, 504);
             this.lvd11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd11.Name = "lvd11";
             this.lvd11.Size = new System.Drawing.Size(90, 18);
@@ -575,7 +575,7 @@
             // lvd12
             // 
             this.lvd12.BackColor = System.Drawing.Color.White;
-            this.lvd12.Location = new System.Drawing.Point(1048, 534);
+            this.lvd12.Location = new System.Drawing.Point(840, 534);
             this.lvd12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd12.Name = "lvd12";
             this.lvd12.Size = new System.Drawing.Size(90, 18);
@@ -585,7 +585,7 @@
             // lvd13
             // 
             this.lvd13.BackColor = System.Drawing.Color.White;
-            this.lvd13.Location = new System.Drawing.Point(1048, 564);
+            this.lvd13.Location = new System.Drawing.Point(840, 564);
             this.lvd13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd13.Name = "lvd13";
             this.lvd13.Size = new System.Drawing.Size(90, 18);
@@ -595,7 +595,7 @@
             // lvd14
             // 
             this.lvd14.BackColor = System.Drawing.Color.White;
-            this.lvd14.Location = new System.Drawing.Point(1048, 594);
+            this.lvd14.Location = new System.Drawing.Point(840, 594);
             this.lvd14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lvd14.Name = "lvd14";
             this.lvd14.Size = new System.Drawing.Size(90, 18);
@@ -605,7 +605,7 @@
             // lre1
             // 
             this.lre1.BackColor = System.Drawing.Color.White;
-            this.lre1.Location = new System.Drawing.Point(1155, 204);
+            this.lre1.Location = new System.Drawing.Point(947, 204);
             this.lre1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre1.Name = "lre1";
             this.lre1.Size = new System.Drawing.Size(90, 18);
@@ -615,7 +615,7 @@
             // lrd1
             // 
             this.lrd1.BackColor = System.Drawing.Color.White;
-            this.lrd1.Location = new System.Drawing.Point(1254, 204);
+            this.lrd1.Location = new System.Drawing.Point(1046, 204);
             this.lrd1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd1.Name = "lrd1";
             this.lrd1.Size = new System.Drawing.Size(90, 18);
@@ -625,7 +625,7 @@
             // lre2
             // 
             this.lre2.BackColor = System.Drawing.Color.White;
-            this.lre2.Location = new System.Drawing.Point(1155, 234);
+            this.lre2.Location = new System.Drawing.Point(947, 234);
             this.lre2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre2.Name = "lre2";
             this.lre2.Size = new System.Drawing.Size(90, 18);
@@ -635,7 +635,7 @@
             // lrd2
             // 
             this.lrd2.BackColor = System.Drawing.Color.White;
-            this.lrd2.Location = new System.Drawing.Point(1254, 234);
+            this.lrd2.Location = new System.Drawing.Point(1046, 234);
             this.lrd2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd2.Name = "lrd2";
             this.lrd2.Size = new System.Drawing.Size(90, 18);
@@ -645,7 +645,7 @@
             // lre3
             // 
             this.lre3.BackColor = System.Drawing.Color.White;
-            this.lre3.Location = new System.Drawing.Point(1155, 264);
+            this.lre3.Location = new System.Drawing.Point(947, 264);
             this.lre3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre3.Name = "lre3";
             this.lre3.Size = new System.Drawing.Size(90, 18);
@@ -655,7 +655,7 @@
             // lrd3
             // 
             this.lrd3.BackColor = System.Drawing.Color.White;
-            this.lrd3.Location = new System.Drawing.Point(1254, 264);
+            this.lrd3.Location = new System.Drawing.Point(1046, 264);
             this.lrd3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd3.Name = "lrd3";
             this.lrd3.Size = new System.Drawing.Size(90, 18);
@@ -665,7 +665,7 @@
             // lre4
             // 
             this.lre4.BackColor = System.Drawing.Color.White;
-            this.lre4.Location = new System.Drawing.Point(1155, 294);
+            this.lre4.Location = new System.Drawing.Point(947, 294);
             this.lre4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre4.Name = "lre4";
             this.lre4.Size = new System.Drawing.Size(90, 18);
@@ -675,7 +675,7 @@
             // lrd4
             // 
             this.lrd4.BackColor = System.Drawing.Color.White;
-            this.lrd4.Location = new System.Drawing.Point(1254, 294);
+            this.lrd4.Location = new System.Drawing.Point(1046, 294);
             this.lrd4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd4.Name = "lrd4";
             this.lrd4.Size = new System.Drawing.Size(90, 18);
@@ -685,7 +685,7 @@
             // lre5
             // 
             this.lre5.BackColor = System.Drawing.Color.White;
-            this.lre5.Location = new System.Drawing.Point(1155, 324);
+            this.lre5.Location = new System.Drawing.Point(947, 324);
             this.lre5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre5.Name = "lre5";
             this.lre5.Size = new System.Drawing.Size(90, 18);
@@ -695,7 +695,7 @@
             // lrd5
             // 
             this.lrd5.BackColor = System.Drawing.Color.White;
-            this.lrd5.Location = new System.Drawing.Point(1254, 324);
+            this.lrd5.Location = new System.Drawing.Point(1046, 324);
             this.lrd5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd5.Name = "lrd5";
             this.lrd5.Size = new System.Drawing.Size(90, 18);
@@ -705,7 +705,7 @@
             // lre6
             // 
             this.lre6.BackColor = System.Drawing.Color.White;
-            this.lre6.Location = new System.Drawing.Point(1155, 354);
+            this.lre6.Location = new System.Drawing.Point(947, 354);
             this.lre6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre6.Name = "lre6";
             this.lre6.Size = new System.Drawing.Size(90, 18);
@@ -715,7 +715,7 @@
             // lrd6
             // 
             this.lrd6.BackColor = System.Drawing.Color.White;
-            this.lrd6.Location = new System.Drawing.Point(1254, 354);
+            this.lrd6.Location = new System.Drawing.Point(1046, 354);
             this.lrd6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd6.Name = "lrd6";
             this.lrd6.Size = new System.Drawing.Size(90, 18);
@@ -725,7 +725,7 @@
             // lre7
             // 
             this.lre7.BackColor = System.Drawing.Color.White;
-            this.lre7.Location = new System.Drawing.Point(1155, 384);
+            this.lre7.Location = new System.Drawing.Point(947, 384);
             this.lre7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre7.Name = "lre7";
             this.lre7.Size = new System.Drawing.Size(90, 18);
@@ -735,7 +735,7 @@
             // lrd7
             // 
             this.lrd7.BackColor = System.Drawing.Color.White;
-            this.lrd7.Location = new System.Drawing.Point(1254, 384);
+            this.lrd7.Location = new System.Drawing.Point(1046, 384);
             this.lrd7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd7.Name = "lrd7";
             this.lrd7.Size = new System.Drawing.Size(90, 18);
@@ -745,7 +745,7 @@
             // lre8
             // 
             this.lre8.BackColor = System.Drawing.Color.White;
-            this.lre8.Location = new System.Drawing.Point(1155, 414);
+            this.lre8.Location = new System.Drawing.Point(947, 414);
             this.lre8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre8.Name = "lre8";
             this.lre8.Size = new System.Drawing.Size(90, 18);
@@ -755,7 +755,7 @@
             // lrd8
             // 
             this.lrd8.BackColor = System.Drawing.Color.White;
-            this.lrd8.Location = new System.Drawing.Point(1254, 414);
+            this.lrd8.Location = new System.Drawing.Point(1046, 414);
             this.lrd8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd8.Name = "lrd8";
             this.lrd8.Size = new System.Drawing.Size(90, 18);
@@ -765,7 +765,7 @@
             // lre9
             // 
             this.lre9.BackColor = System.Drawing.Color.White;
-            this.lre9.Location = new System.Drawing.Point(1155, 444);
+            this.lre9.Location = new System.Drawing.Point(947, 444);
             this.lre9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre9.Name = "lre9";
             this.lre9.Size = new System.Drawing.Size(90, 18);
@@ -775,7 +775,7 @@
             // lrd9
             // 
             this.lrd9.BackColor = System.Drawing.Color.White;
-            this.lrd9.Location = new System.Drawing.Point(1254, 444);
+            this.lrd9.Location = new System.Drawing.Point(1046, 444);
             this.lrd9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd9.Name = "lrd9";
             this.lrd9.Size = new System.Drawing.Size(90, 18);
@@ -785,7 +785,7 @@
             // lre10
             // 
             this.lre10.BackColor = System.Drawing.Color.White;
-            this.lre10.Location = new System.Drawing.Point(1155, 474);
+            this.lre10.Location = new System.Drawing.Point(947, 474);
             this.lre10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre10.Name = "lre10";
             this.lre10.Size = new System.Drawing.Size(90, 18);
@@ -795,7 +795,7 @@
             // lrd10
             // 
             this.lrd10.BackColor = System.Drawing.Color.White;
-            this.lrd10.Location = new System.Drawing.Point(1254, 474);
+            this.lrd10.Location = new System.Drawing.Point(1046, 474);
             this.lrd10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd10.Name = "lrd10";
             this.lrd10.Size = new System.Drawing.Size(90, 18);
@@ -805,7 +805,7 @@
             // lre11
             // 
             this.lre11.BackColor = System.Drawing.Color.White;
-            this.lre11.Location = new System.Drawing.Point(1155, 504);
+            this.lre11.Location = new System.Drawing.Point(947, 504);
             this.lre11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre11.Name = "lre11";
             this.lre11.Size = new System.Drawing.Size(90, 18);
@@ -815,7 +815,7 @@
             // lrd11
             // 
             this.lrd11.BackColor = System.Drawing.Color.White;
-            this.lrd11.Location = new System.Drawing.Point(1254, 504);
+            this.lrd11.Location = new System.Drawing.Point(1046, 504);
             this.lrd11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd11.Name = "lrd11";
             this.lrd11.Size = new System.Drawing.Size(90, 18);
@@ -825,7 +825,7 @@
             // lre12
             // 
             this.lre12.BackColor = System.Drawing.Color.White;
-            this.lre12.Location = new System.Drawing.Point(1155, 534);
+            this.lre12.Location = new System.Drawing.Point(947, 534);
             this.lre12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre12.Name = "lre12";
             this.lre12.Size = new System.Drawing.Size(90, 18);
@@ -835,7 +835,7 @@
             // lrd12
             // 
             this.lrd12.BackColor = System.Drawing.Color.White;
-            this.lrd12.Location = new System.Drawing.Point(1254, 534);
+            this.lrd12.Location = new System.Drawing.Point(1046, 534);
             this.lrd12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd12.Name = "lrd12";
             this.lrd12.Size = new System.Drawing.Size(90, 18);
@@ -845,7 +845,7 @@
             // lre13
             // 
             this.lre13.BackColor = System.Drawing.Color.White;
-            this.lre13.Location = new System.Drawing.Point(1155, 564);
+            this.lre13.Location = new System.Drawing.Point(947, 564);
             this.lre13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre13.Name = "lre13";
             this.lre13.Size = new System.Drawing.Size(90, 18);
@@ -855,7 +855,7 @@
             // lrd13
             // 
             this.lrd13.BackColor = System.Drawing.Color.White;
-            this.lrd13.Location = new System.Drawing.Point(1254, 564);
+            this.lrd13.Location = new System.Drawing.Point(1046, 564);
             this.lrd13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd13.Name = "lrd13";
             this.lrd13.Size = new System.Drawing.Size(90, 18);
@@ -865,7 +865,7 @@
             // lre14
             // 
             this.lre14.BackColor = System.Drawing.Color.White;
-            this.lre14.Location = new System.Drawing.Point(1155, 594);
+            this.lre14.Location = new System.Drawing.Point(947, 594);
             this.lre14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lre14.Name = "lre14";
             this.lre14.Size = new System.Drawing.Size(90, 18);
@@ -875,7 +875,7 @@
             // lrd14
             // 
             this.lrd14.BackColor = System.Drawing.Color.White;
-            this.lrd14.Location = new System.Drawing.Point(1254, 594);
+            this.lrd14.Location = new System.Drawing.Point(1046, 594);
             this.lrd14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrd14.Name = "lrd14";
             this.lrd14.Size = new System.Drawing.Size(90, 18);
@@ -886,7 +886,7 @@
             // 
             this.label59.AutoSize = true;
             this.label59.BackColor = System.Drawing.SystemColors.Control;
-            this.label59.Location = new System.Drawing.Point(984, 170);
+            this.label59.Location = new System.Drawing.Point(776, 170);
             this.label59.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label59.Name = "label59";
             this.label59.Size = new System.Drawing.Size(44, 18);
@@ -897,7 +897,7 @@
             // 
             this.label60.AutoSize = true;
             this.label60.BackColor = System.Drawing.SystemColors.Control;
-            this.label60.Location = new System.Drawing.Point(1056, 170);
+            this.label60.Location = new System.Drawing.Point(848, 170);
             this.label60.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label60.Name = "label60";
             this.label60.Size = new System.Drawing.Size(44, 18);
@@ -908,7 +908,7 @@
             // 
             this.label61.AutoSize = true;
             this.label61.BackColor = System.Drawing.SystemColors.Control;
-            this.label61.Location = new System.Drawing.Point(1186, 170);
+            this.label61.Location = new System.Drawing.Point(978, 170);
             this.label61.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label61.Name = "label61";
             this.label61.Size = new System.Drawing.Size(44, 18);
@@ -919,7 +919,7 @@
             // 
             this.label62.AutoSize = true;
             this.label62.BackColor = System.Drawing.SystemColors.Control;
-            this.label62.Location = new System.Drawing.Point(1258, 170);
+            this.label62.Location = new System.Drawing.Point(1050, 170);
             this.label62.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label62.Name = "label62";
             this.label62.Size = new System.Drawing.Size(44, 18);
@@ -930,7 +930,7 @@
             // 
             this.label63.AutoSize = true;
             this.label63.BackColor = System.Drawing.SystemColors.Control;
-            this.label63.Location = new System.Drawing.Point(1028, 136);
+            this.label63.Location = new System.Drawing.Point(820, 136);
             this.label63.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label63.Name = "label63";
             this.label63.Size = new System.Drawing.Size(26, 18);
@@ -941,7 +941,7 @@
             // 
             this.label64.AutoSize = true;
             this.label64.BackColor = System.Drawing.SystemColors.Control;
-            this.label64.Location = new System.Drawing.Point(1222, 136);
+            this.label64.Location = new System.Drawing.Point(1014, 136);
             this.label64.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label64.Name = "label64";
             this.label64.Size = new System.Drawing.Size(44, 18);
@@ -951,7 +951,7 @@
             // label3
             // 
             this.label3.BackColor = System.Drawing.Color.White;
-            this.label3.Location = new System.Drawing.Point(855, 204);
+            this.label3.Location = new System.Drawing.Point(647, 204);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(69, 18);
@@ -961,7 +961,7 @@
             // label4
             // 
             this.label4.BackColor = System.Drawing.Color.White;
-            this.label4.Location = new System.Drawing.Point(855, 234);
+            this.label4.Location = new System.Drawing.Point(647, 234);
             this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(69, 18);
@@ -971,7 +971,7 @@
             // label5
             // 
             this.label5.BackColor = System.Drawing.Color.White;
-            this.label5.Location = new System.Drawing.Point(855, 264);
+            this.label5.Location = new System.Drawing.Point(647, 264);
             this.label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(69, 18);
@@ -981,7 +981,7 @@
             // label6
             // 
             this.label6.BackColor = System.Drawing.Color.White;
-            this.label6.Location = new System.Drawing.Point(855, 294);
+            this.label6.Location = new System.Drawing.Point(647, 294);
             this.label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(69, 18);
@@ -991,7 +991,7 @@
             // label13
             // 
             this.label13.BackColor = System.Drawing.Color.White;
-            this.label13.Location = new System.Drawing.Point(855, 324);
+            this.label13.Location = new System.Drawing.Point(647, 324);
             this.label13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(69, 18);
@@ -1001,7 +1001,7 @@
             // label65
             // 
             this.label65.BackColor = System.Drawing.Color.White;
-            this.label65.Location = new System.Drawing.Point(855, 354);
+            this.label65.Location = new System.Drawing.Point(647, 354);
             this.label65.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label65.Name = "label65";
             this.label65.Size = new System.Drawing.Size(69, 18);
@@ -1011,7 +1011,7 @@
             // label66
             // 
             this.label66.BackColor = System.Drawing.Color.White;
-            this.label66.Location = new System.Drawing.Point(855, 384);
+            this.label66.Location = new System.Drawing.Point(647, 384);
             this.label66.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label66.Name = "label66";
             this.label66.Size = new System.Drawing.Size(69, 18);
@@ -1021,7 +1021,7 @@
             // label67
             // 
             this.label67.BackColor = System.Drawing.Color.White;
-            this.label67.Location = new System.Drawing.Point(855, 414);
+            this.label67.Location = new System.Drawing.Point(647, 414);
             this.label67.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label67.Name = "label67";
             this.label67.Size = new System.Drawing.Size(69, 18);
@@ -1031,7 +1031,7 @@
             // label68
             // 
             this.label68.BackColor = System.Drawing.Color.White;
-            this.label68.Location = new System.Drawing.Point(855, 444);
+            this.label68.Location = new System.Drawing.Point(647, 444);
             this.label68.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label68.Name = "label68";
             this.label68.Size = new System.Drawing.Size(69, 18);
@@ -1041,7 +1041,7 @@
             // label69
             // 
             this.label69.BackColor = System.Drawing.Color.White;
-            this.label69.Location = new System.Drawing.Point(855, 474);
+            this.label69.Location = new System.Drawing.Point(647, 474);
             this.label69.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label69.Name = "label69";
             this.label69.Size = new System.Drawing.Size(69, 18);
@@ -1051,7 +1051,7 @@
             // label70
             // 
             this.label70.BackColor = System.Drawing.Color.White;
-            this.label70.Location = new System.Drawing.Point(855, 504);
+            this.label70.Location = new System.Drawing.Point(647, 504);
             this.label70.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label70.Name = "label70";
             this.label70.Size = new System.Drawing.Size(69, 18);
@@ -1061,7 +1061,7 @@
             // label71
             // 
             this.label71.BackColor = System.Drawing.Color.White;
-            this.label71.Location = new System.Drawing.Point(855, 534);
+            this.label71.Location = new System.Drawing.Point(647, 534);
             this.label71.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label71.Name = "label71";
             this.label71.Size = new System.Drawing.Size(69, 18);
@@ -1071,7 +1071,7 @@
             // label72
             // 
             this.label72.BackColor = System.Drawing.Color.White;
-            this.label72.Location = new System.Drawing.Point(855, 564);
+            this.label72.Location = new System.Drawing.Point(647, 564);
             this.label72.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label72.Name = "label72";
             this.label72.Size = new System.Drawing.Size(69, 18);
@@ -1081,7 +1081,7 @@
             // label73
             // 
             this.label73.BackColor = System.Drawing.Color.White;
-            this.label73.Location = new System.Drawing.Point(855, 594);
+            this.label73.Location = new System.Drawing.Point(647, 594);
             this.label73.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label73.Name = "label73";
             this.label73.Size = new System.Drawing.Size(69, 18);
@@ -1092,7 +1092,7 @@
             // 
             this.label74.AutoSize = true;
             this.label74.BackColor = System.Drawing.SystemColors.Control;
-            this.label74.Location = new System.Drawing.Point(855, 170);
+            this.label74.Location = new System.Drawing.Point(647, 170);
             this.label74.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label74.Name = "label74";
             this.label74.Size = new System.Drawing.Size(26, 18);
@@ -1103,7 +1103,7 @@
             // 
             this.label7.AutoSize = true;
             this.label7.BackColor = System.Drawing.SystemColors.Control;
-            this.label7.Location = new System.Drawing.Point(950, 640);
+            this.label7.Location = new System.Drawing.Point(742, 640);
             this.label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(44, 18);
@@ -1113,7 +1113,7 @@
             // lE1
             // 
             this.lE1.BackColor = System.Drawing.Color.White;
-            this.lE1.Location = new System.Drawing.Point(1016, 640);
+            this.lE1.Location = new System.Drawing.Point(808, 640);
             this.lE1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lE1.Name = "lE1";
             this.lE1.Size = new System.Drawing.Size(308, 18);
@@ -1123,7 +1123,7 @@
             // lE2
             // 
             this.lE2.BackColor = System.Drawing.Color.White;
-            this.lE2.Location = new System.Drawing.Point(1016, 658);
+            this.lE2.Location = new System.Drawing.Point(808, 658);
             this.lE2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lE2.Name = "lE2";
             this.lE2.Size = new System.Drawing.Size(308, 18);
@@ -1133,7 +1133,7 @@
             // lE3
             // 
             this.lE3.BackColor = System.Drawing.Color.White;
-            this.lE3.Location = new System.Drawing.Point(1016, 676);
+            this.lE3.Location = new System.Drawing.Point(808, 676);
             this.lE3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lE3.Name = "lE3";
             this.lE3.Size = new System.Drawing.Size(308, 18);
@@ -1143,7 +1143,7 @@
             // lE4
             // 
             this.lE4.BackColor = System.Drawing.Color.White;
-            this.lE4.Location = new System.Drawing.Point(1016, 694);
+            this.lE4.Location = new System.Drawing.Point(808, 694);
             this.lE4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lE4.Name = "lE4";
             this.lE4.Size = new System.Drawing.Size(308, 18);
@@ -1153,7 +1153,7 @@
             // lpw1
             // 
             this.lpw1.BackColor = System.Drawing.Color.White;
-            this.lpw1.Location = new System.Drawing.Point(1360, 204);
+            this.lpw1.Location = new System.Drawing.Point(1152, 204);
             this.lpw1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw1.Name = "lpw1";
             this.lpw1.Size = new System.Drawing.Size(90, 18);
@@ -1163,7 +1163,7 @@
             // lpp1
             // 
             this.lpp1.BackColor = System.Drawing.Color.White;
-            this.lpp1.Location = new System.Drawing.Point(1460, 204);
+            this.lpp1.Location = new System.Drawing.Point(1252, 204);
             this.lpp1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp1.Name = "lpp1";
             this.lpp1.Size = new System.Drawing.Size(90, 18);
@@ -1173,7 +1173,7 @@
             // lpw2
             // 
             this.lpw2.BackColor = System.Drawing.Color.White;
-            this.lpw2.Location = new System.Drawing.Point(1360, 234);
+            this.lpw2.Location = new System.Drawing.Point(1152, 234);
             this.lpw2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw2.Name = "lpw2";
             this.lpw2.Size = new System.Drawing.Size(90, 18);
@@ -1183,7 +1183,7 @@
             // lpp2
             // 
             this.lpp2.BackColor = System.Drawing.Color.White;
-            this.lpp2.Location = new System.Drawing.Point(1460, 234);
+            this.lpp2.Location = new System.Drawing.Point(1252, 234);
             this.lpp2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp2.Name = "lpp2";
             this.lpp2.Size = new System.Drawing.Size(90, 18);
@@ -1193,7 +1193,7 @@
             // lpw3
             // 
             this.lpw3.BackColor = System.Drawing.Color.White;
-            this.lpw3.Location = new System.Drawing.Point(1360, 264);
+            this.lpw3.Location = new System.Drawing.Point(1152, 264);
             this.lpw3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw3.Name = "lpw3";
             this.lpw3.Size = new System.Drawing.Size(90, 18);
@@ -1203,7 +1203,7 @@
             // lpp3
             // 
             this.lpp3.BackColor = System.Drawing.Color.White;
-            this.lpp3.Location = new System.Drawing.Point(1460, 264);
+            this.lpp3.Location = new System.Drawing.Point(1252, 264);
             this.lpp3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp3.Name = "lpp3";
             this.lpp3.Size = new System.Drawing.Size(90, 18);
@@ -1213,7 +1213,7 @@
             // lpw4
             // 
             this.lpw4.BackColor = System.Drawing.Color.White;
-            this.lpw4.Location = new System.Drawing.Point(1360, 294);
+            this.lpw4.Location = new System.Drawing.Point(1152, 294);
             this.lpw4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw4.Name = "lpw4";
             this.lpw4.Size = new System.Drawing.Size(90, 18);
@@ -1223,7 +1223,7 @@
             // lpp4
             // 
             this.lpp4.BackColor = System.Drawing.Color.White;
-            this.lpp4.Location = new System.Drawing.Point(1460, 294);
+            this.lpp4.Location = new System.Drawing.Point(1252, 294);
             this.lpp4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp4.Name = "lpp4";
             this.lpp4.Size = new System.Drawing.Size(90, 18);
@@ -1233,7 +1233,7 @@
             // lpw5
             // 
             this.lpw5.BackColor = System.Drawing.Color.White;
-            this.lpw5.Location = new System.Drawing.Point(1360, 324);
+            this.lpw5.Location = new System.Drawing.Point(1152, 324);
             this.lpw5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw5.Name = "lpw5";
             this.lpw5.Size = new System.Drawing.Size(90, 18);
@@ -1243,7 +1243,7 @@
             // lpp5
             // 
             this.lpp5.BackColor = System.Drawing.Color.White;
-            this.lpp5.Location = new System.Drawing.Point(1460, 324);
+            this.lpp5.Location = new System.Drawing.Point(1252, 324);
             this.lpp5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp5.Name = "lpp5";
             this.lpp5.Size = new System.Drawing.Size(90, 18);
@@ -1253,7 +1253,7 @@
             // lpw6
             // 
             this.lpw6.BackColor = System.Drawing.Color.White;
-            this.lpw6.Location = new System.Drawing.Point(1360, 354);
+            this.lpw6.Location = new System.Drawing.Point(1152, 354);
             this.lpw6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw6.Name = "lpw6";
             this.lpw6.Size = new System.Drawing.Size(90, 18);
@@ -1263,7 +1263,7 @@
             // lpp6
             // 
             this.lpp6.BackColor = System.Drawing.Color.White;
-            this.lpp6.Location = new System.Drawing.Point(1460, 354);
+            this.lpp6.Location = new System.Drawing.Point(1252, 354);
             this.lpp6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp6.Name = "lpp6";
             this.lpp6.Size = new System.Drawing.Size(90, 18);
@@ -1273,7 +1273,7 @@
             // lpw7
             // 
             this.lpw7.BackColor = System.Drawing.Color.White;
-            this.lpw7.Location = new System.Drawing.Point(1360, 384);
+            this.lpw7.Location = new System.Drawing.Point(1152, 384);
             this.lpw7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw7.Name = "lpw7";
             this.lpw7.Size = new System.Drawing.Size(90, 18);
@@ -1283,7 +1283,7 @@
             // lpp7
             // 
             this.lpp7.BackColor = System.Drawing.Color.White;
-            this.lpp7.Location = new System.Drawing.Point(1460, 384);
+            this.lpp7.Location = new System.Drawing.Point(1252, 384);
             this.lpp7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp7.Name = "lpp7";
             this.lpp7.Size = new System.Drawing.Size(90, 18);
@@ -1293,7 +1293,7 @@
             // lpw8
             // 
             this.lpw8.BackColor = System.Drawing.Color.White;
-            this.lpw8.Location = new System.Drawing.Point(1360, 414);
+            this.lpw8.Location = new System.Drawing.Point(1152, 414);
             this.lpw8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw8.Name = "lpw8";
             this.lpw8.Size = new System.Drawing.Size(90, 18);
@@ -1303,7 +1303,7 @@
             // lpp8
             // 
             this.lpp8.BackColor = System.Drawing.Color.White;
-            this.lpp8.Location = new System.Drawing.Point(1460, 414);
+            this.lpp8.Location = new System.Drawing.Point(1252, 414);
             this.lpp8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp8.Name = "lpp8";
             this.lpp8.Size = new System.Drawing.Size(90, 18);
@@ -1313,7 +1313,7 @@
             // lpw9
             // 
             this.lpw9.BackColor = System.Drawing.Color.White;
-            this.lpw9.Location = new System.Drawing.Point(1360, 444);
+            this.lpw9.Location = new System.Drawing.Point(1152, 444);
             this.lpw9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw9.Name = "lpw9";
             this.lpw9.Size = new System.Drawing.Size(90, 18);
@@ -1323,7 +1323,7 @@
             // lpp9
             // 
             this.lpp9.BackColor = System.Drawing.Color.White;
-            this.lpp9.Location = new System.Drawing.Point(1460, 444);
+            this.lpp9.Location = new System.Drawing.Point(1252, 444);
             this.lpp9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp9.Name = "lpp9";
             this.lpp9.Size = new System.Drawing.Size(90, 18);
@@ -1333,7 +1333,7 @@
             // lpw10
             // 
             this.lpw10.BackColor = System.Drawing.Color.White;
-            this.lpw10.Location = new System.Drawing.Point(1360, 474);
+            this.lpw10.Location = new System.Drawing.Point(1152, 474);
             this.lpw10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw10.Name = "lpw10";
             this.lpw10.Size = new System.Drawing.Size(90, 18);
@@ -1343,7 +1343,7 @@
             // lpp10
             // 
             this.lpp10.BackColor = System.Drawing.Color.White;
-            this.lpp10.Location = new System.Drawing.Point(1460, 474);
+            this.lpp10.Location = new System.Drawing.Point(1252, 474);
             this.lpp10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp10.Name = "lpp10";
             this.lpp10.Size = new System.Drawing.Size(90, 18);
@@ -1353,7 +1353,7 @@
             // lpw11
             // 
             this.lpw11.BackColor = System.Drawing.Color.White;
-            this.lpw11.Location = new System.Drawing.Point(1360, 504);
+            this.lpw11.Location = new System.Drawing.Point(1152, 504);
             this.lpw11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw11.Name = "lpw11";
             this.lpw11.Size = new System.Drawing.Size(90, 18);
@@ -1363,7 +1363,7 @@
             // lpp11
             // 
             this.lpp11.BackColor = System.Drawing.Color.White;
-            this.lpp11.Location = new System.Drawing.Point(1460, 504);
+            this.lpp11.Location = new System.Drawing.Point(1252, 504);
             this.lpp11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp11.Name = "lpp11";
             this.lpp11.Size = new System.Drawing.Size(90, 18);
@@ -1373,7 +1373,7 @@
             // lpw12
             // 
             this.lpw12.BackColor = System.Drawing.Color.White;
-            this.lpw12.Location = new System.Drawing.Point(1360, 534);
+            this.lpw12.Location = new System.Drawing.Point(1152, 534);
             this.lpw12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw12.Name = "lpw12";
             this.lpw12.Size = new System.Drawing.Size(90, 18);
@@ -1383,7 +1383,7 @@
             // lpp12
             // 
             this.lpp12.BackColor = System.Drawing.Color.White;
-            this.lpp12.Location = new System.Drawing.Point(1460, 534);
+            this.lpp12.Location = new System.Drawing.Point(1252, 534);
             this.lpp12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp12.Name = "lpp12";
             this.lpp12.Size = new System.Drawing.Size(90, 18);
@@ -1393,7 +1393,7 @@
             // lpw13
             // 
             this.lpw13.BackColor = System.Drawing.Color.White;
-            this.lpw13.Location = new System.Drawing.Point(1360, 564);
+            this.lpw13.Location = new System.Drawing.Point(1152, 564);
             this.lpw13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw13.Name = "lpw13";
             this.lpw13.Size = new System.Drawing.Size(90, 18);
@@ -1403,7 +1403,7 @@
             // lpp13
             // 
             this.lpp13.BackColor = System.Drawing.Color.White;
-            this.lpp13.Location = new System.Drawing.Point(1460, 564);
+            this.lpp13.Location = new System.Drawing.Point(1252, 564);
             this.lpp13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp13.Name = "lpp13";
             this.lpp13.Size = new System.Drawing.Size(90, 18);
@@ -1413,7 +1413,7 @@
             // lpw14
             // 
             this.lpw14.BackColor = System.Drawing.Color.White;
-            this.lpw14.Location = new System.Drawing.Point(1360, 594);
+            this.lpw14.Location = new System.Drawing.Point(1152, 594);
             this.lpw14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpw14.Name = "lpw14";
             this.lpw14.Size = new System.Drawing.Size(90, 18);
@@ -1423,7 +1423,7 @@
             // lpp14
             // 
             this.lpp14.BackColor = System.Drawing.Color.White;
-            this.lpp14.Location = new System.Drawing.Point(1460, 594);
+            this.lpp14.Location = new System.Drawing.Point(1252, 594);
             this.lpp14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpp14.Name = "lpp14";
             this.lpp14.Size = new System.Drawing.Size(90, 18);
@@ -1434,7 +1434,7 @@
             // 
             this.label37.AutoSize = true;
             this.label37.BackColor = System.Drawing.SystemColors.Control;
-            this.label37.Location = new System.Drawing.Point(1432, 136);
+            this.label37.Location = new System.Drawing.Point(1224, 136);
             this.label37.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label37.Name = "label37";
             this.label37.Size = new System.Drawing.Size(44, 18);
@@ -1445,7 +1445,7 @@
             // 
             this.label38.AutoSize = true;
             this.label38.BackColor = System.Drawing.SystemColors.Control;
-            this.label38.Location = new System.Drawing.Point(1390, 170);
+            this.label38.Location = new System.Drawing.Point(1182, 170);
             this.label38.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label38.Name = "label38";
             this.label38.Size = new System.Drawing.Size(35, 18);
@@ -1456,7 +1456,7 @@
             // 
             this.label39.AutoSize = true;
             this.label39.BackColor = System.Drawing.SystemColors.Control;
-            this.label39.Location = new System.Drawing.Point(1484, 170);
+            this.label39.Location = new System.Drawing.Point(1276, 170);
             this.label39.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label39.Name = "label39";
             this.label39.Size = new System.Drawing.Size(35, 18);
@@ -1466,7 +1466,7 @@
             // lpwSum
             // 
             this.lpwSum.BackColor = System.Drawing.Color.White;
-            this.lpwSum.Location = new System.Drawing.Point(1360, 627);
+            this.lpwSum.Location = new System.Drawing.Point(1152, 627);
             this.lpwSum.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lpwSum.Name = "lpwSum";
             this.lpwSum.Size = new System.Drawing.Size(90, 18);
@@ -1476,7 +1476,7 @@
             // lppSum
             // 
             this.lppSum.BackColor = System.Drawing.Color.White;
-            this.lppSum.Location = new System.Drawing.Point(1460, 627);
+            this.lppSum.Location = new System.Drawing.Point(1252, 627);
             this.lppSum.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lppSum.Name = "lppSum";
             this.lppSum.Size = new System.Drawing.Size(90, 18);
@@ -1485,7 +1485,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(1436, 18);
+            this.button1.Location = new System.Drawing.Point(1228, 18);
             this.button1.Margin = new System.Windows.Forms.Padding(4);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(112, 34);
@@ -1498,7 +1498,7 @@
             // 
             this.label8.AutoSize = true;
             this.label8.BackColor = System.Drawing.SystemColors.Control;
-            this.label8.Location = new System.Drawing.Point(1617, 136);
+            this.label8.Location = new System.Drawing.Point(1409, 136);
             this.label8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(80, 18);
@@ -1509,7 +1509,7 @@
             // 
             this.label9.AutoSize = true;
             this.label9.BackColor = System.Drawing.SystemColors.Control;
-            this.label9.Location = new System.Drawing.Point(1596, 170);
+            this.label9.Location = new System.Drawing.Point(1388, 170);
             this.label9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(35, 18);
@@ -1520,7 +1520,7 @@
             // 
             this.label10.AutoSize = true;
             this.label10.BackColor = System.Drawing.SystemColors.Control;
-            this.label10.Location = new System.Drawing.Point(1689, 170);
+            this.label10.Location = new System.Drawing.Point(1481, 170);
             this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(35, 18);
@@ -1530,7 +1530,7 @@
             // lrcw1
             // 
             this.lrcw1.BackColor = System.Drawing.Color.White;
-            this.lrcw1.Location = new System.Drawing.Point(1566, 204);
+            this.lrcw1.Location = new System.Drawing.Point(1358, 204);
             this.lrcw1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw1.Name = "lrcw1";
             this.lrcw1.Size = new System.Drawing.Size(90, 18);
@@ -1540,7 +1540,7 @@
             // lrcp1
             // 
             this.lrcp1.BackColor = System.Drawing.Color.White;
-            this.lrcp1.Location = new System.Drawing.Point(1665, 204);
+            this.lrcp1.Location = new System.Drawing.Point(1457, 204);
             this.lrcp1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp1.Name = "lrcp1";
             this.lrcp1.Size = new System.Drawing.Size(90, 18);
@@ -1550,7 +1550,7 @@
             // lrcw2
             // 
             this.lrcw2.BackColor = System.Drawing.Color.White;
-            this.lrcw2.Location = new System.Drawing.Point(1566, 234);
+            this.lrcw2.Location = new System.Drawing.Point(1358, 234);
             this.lrcw2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw2.Name = "lrcw2";
             this.lrcw2.Size = new System.Drawing.Size(90, 18);
@@ -1560,7 +1560,7 @@
             // lrcp2
             // 
             this.lrcp2.BackColor = System.Drawing.Color.White;
-            this.lrcp2.Location = new System.Drawing.Point(1665, 234);
+            this.lrcp2.Location = new System.Drawing.Point(1457, 234);
             this.lrcp2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp2.Name = "lrcp2";
             this.lrcp2.Size = new System.Drawing.Size(90, 18);
@@ -1570,7 +1570,7 @@
             // lrcw3
             // 
             this.lrcw3.BackColor = System.Drawing.Color.White;
-            this.lrcw3.Location = new System.Drawing.Point(1566, 264);
+            this.lrcw3.Location = new System.Drawing.Point(1358, 264);
             this.lrcw3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw3.Name = "lrcw3";
             this.lrcw3.Size = new System.Drawing.Size(90, 18);
@@ -1580,7 +1580,7 @@
             // lrcp3
             // 
             this.lrcp3.BackColor = System.Drawing.Color.White;
-            this.lrcp3.Location = new System.Drawing.Point(1665, 264);
+            this.lrcp3.Location = new System.Drawing.Point(1457, 264);
             this.lrcp3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp3.Name = "lrcp3";
             this.lrcp3.Size = new System.Drawing.Size(90, 18);
@@ -1590,7 +1590,7 @@
             // lrcw4
             // 
             this.lrcw4.BackColor = System.Drawing.Color.White;
-            this.lrcw4.Location = new System.Drawing.Point(1566, 294);
+            this.lrcw4.Location = new System.Drawing.Point(1358, 294);
             this.lrcw4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw4.Name = "lrcw4";
             this.lrcw4.Size = new System.Drawing.Size(90, 18);
@@ -1600,7 +1600,7 @@
             // lrcp4
             // 
             this.lrcp4.BackColor = System.Drawing.Color.White;
-            this.lrcp4.Location = new System.Drawing.Point(1665, 294);
+            this.lrcp4.Location = new System.Drawing.Point(1457, 294);
             this.lrcp4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp4.Name = "lrcp4";
             this.lrcp4.Size = new System.Drawing.Size(90, 18);
@@ -1610,7 +1610,7 @@
             // lrcw5
             // 
             this.lrcw5.BackColor = System.Drawing.Color.White;
-            this.lrcw5.Location = new System.Drawing.Point(1566, 324);
+            this.lrcw5.Location = new System.Drawing.Point(1358, 324);
             this.lrcw5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw5.Name = "lrcw5";
             this.lrcw5.Size = new System.Drawing.Size(90, 18);
@@ -1620,7 +1620,7 @@
             // lrcp5
             // 
             this.lrcp5.BackColor = System.Drawing.Color.White;
-            this.lrcp5.Location = new System.Drawing.Point(1665, 324);
+            this.lrcp5.Location = new System.Drawing.Point(1457, 324);
             this.lrcp5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp5.Name = "lrcp5";
             this.lrcp5.Size = new System.Drawing.Size(90, 18);
@@ -1630,7 +1630,7 @@
             // lrcw6
             // 
             this.lrcw6.BackColor = System.Drawing.Color.White;
-            this.lrcw6.Location = new System.Drawing.Point(1566, 354);
+            this.lrcw6.Location = new System.Drawing.Point(1358, 354);
             this.lrcw6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw6.Name = "lrcw6";
             this.lrcw6.Size = new System.Drawing.Size(90, 18);
@@ -1640,7 +1640,7 @@
             // lrcp6
             // 
             this.lrcp6.BackColor = System.Drawing.Color.White;
-            this.lrcp6.Location = new System.Drawing.Point(1665, 354);
+            this.lrcp6.Location = new System.Drawing.Point(1457, 354);
             this.lrcp6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp6.Name = "lrcp6";
             this.lrcp6.Size = new System.Drawing.Size(90, 18);
@@ -1650,7 +1650,7 @@
             // lrcw7
             // 
             this.lrcw7.BackColor = System.Drawing.Color.White;
-            this.lrcw7.Location = new System.Drawing.Point(1566, 384);
+            this.lrcw7.Location = new System.Drawing.Point(1358, 384);
             this.lrcw7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw7.Name = "lrcw7";
             this.lrcw7.Size = new System.Drawing.Size(90, 18);
@@ -1660,7 +1660,7 @@
             // lrcp7
             // 
             this.lrcp7.BackColor = System.Drawing.Color.White;
-            this.lrcp7.Location = new System.Drawing.Point(1665, 384);
+            this.lrcp7.Location = new System.Drawing.Point(1457, 384);
             this.lrcp7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp7.Name = "lrcp7";
             this.lrcp7.Size = new System.Drawing.Size(90, 18);
@@ -1670,7 +1670,7 @@
             // lrcw8
             // 
             this.lrcw8.BackColor = System.Drawing.Color.White;
-            this.lrcw8.Location = new System.Drawing.Point(1566, 414);
+            this.lrcw8.Location = new System.Drawing.Point(1358, 414);
             this.lrcw8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw8.Name = "lrcw8";
             this.lrcw8.Size = new System.Drawing.Size(90, 18);
@@ -1680,7 +1680,7 @@
             // lrcp8
             // 
             this.lrcp8.BackColor = System.Drawing.Color.White;
-            this.lrcp8.Location = new System.Drawing.Point(1665, 414);
+            this.lrcp8.Location = new System.Drawing.Point(1457, 414);
             this.lrcp8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp8.Name = "lrcp8";
             this.lrcp8.Size = new System.Drawing.Size(90, 18);
@@ -1690,7 +1690,7 @@
             // lrcw9
             // 
             this.lrcw9.BackColor = System.Drawing.Color.White;
-            this.lrcw9.Location = new System.Drawing.Point(1566, 444);
+            this.lrcw9.Location = new System.Drawing.Point(1358, 444);
             this.lrcw9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw9.Name = "lrcw9";
             this.lrcw9.Size = new System.Drawing.Size(90, 18);
@@ -1700,7 +1700,7 @@
             // lrcp9
             // 
             this.lrcp9.BackColor = System.Drawing.Color.White;
-            this.lrcp9.Location = new System.Drawing.Point(1665, 444);
+            this.lrcp9.Location = new System.Drawing.Point(1457, 444);
             this.lrcp9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp9.Name = "lrcp9";
             this.lrcp9.Size = new System.Drawing.Size(90, 18);
@@ -1710,7 +1710,7 @@
             // lrcw10
             // 
             this.lrcw10.BackColor = System.Drawing.Color.White;
-            this.lrcw10.Location = new System.Drawing.Point(1566, 474);
+            this.lrcw10.Location = new System.Drawing.Point(1358, 474);
             this.lrcw10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw10.Name = "lrcw10";
             this.lrcw10.Size = new System.Drawing.Size(90, 18);
@@ -1720,7 +1720,7 @@
             // lrcp10
             // 
             this.lrcp10.BackColor = System.Drawing.Color.White;
-            this.lrcp10.Location = new System.Drawing.Point(1665, 474);
+            this.lrcp10.Location = new System.Drawing.Point(1457, 474);
             this.lrcp10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp10.Name = "lrcp10";
             this.lrcp10.Size = new System.Drawing.Size(90, 18);
@@ -1730,7 +1730,7 @@
             // lrcw11
             // 
             this.lrcw11.BackColor = System.Drawing.Color.White;
-            this.lrcw11.Location = new System.Drawing.Point(1566, 504);
+            this.lrcw11.Location = new System.Drawing.Point(1358, 504);
             this.lrcw11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw11.Name = "lrcw11";
             this.lrcw11.Size = new System.Drawing.Size(90, 18);
@@ -1740,7 +1740,7 @@
             // lrcp11
             // 
             this.lrcp11.BackColor = System.Drawing.Color.White;
-            this.lrcp11.Location = new System.Drawing.Point(1665, 504);
+            this.lrcp11.Location = new System.Drawing.Point(1457, 504);
             this.lrcp11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp11.Name = "lrcp11";
             this.lrcp11.Size = new System.Drawing.Size(90, 18);
@@ -1750,7 +1750,7 @@
             // lrcw12
             // 
             this.lrcw12.BackColor = System.Drawing.Color.White;
-            this.lrcw12.Location = new System.Drawing.Point(1566, 534);
+            this.lrcw12.Location = new System.Drawing.Point(1358, 534);
             this.lrcw12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw12.Name = "lrcw12";
             this.lrcw12.Size = new System.Drawing.Size(90, 18);
@@ -1760,7 +1760,7 @@
             // lrcp12
             // 
             this.lrcp12.BackColor = System.Drawing.Color.White;
-            this.lrcp12.Location = new System.Drawing.Point(1665, 534);
+            this.lrcp12.Location = new System.Drawing.Point(1457, 534);
             this.lrcp12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp12.Name = "lrcp12";
             this.lrcp12.Size = new System.Drawing.Size(90, 18);
@@ -1770,7 +1770,7 @@
             // lrcw13
             // 
             this.lrcw13.BackColor = System.Drawing.Color.White;
-            this.lrcw13.Location = new System.Drawing.Point(1566, 564);
+            this.lrcw13.Location = new System.Drawing.Point(1358, 564);
             this.lrcw13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw13.Name = "lrcw13";
             this.lrcw13.Size = new System.Drawing.Size(90, 18);
@@ -1780,7 +1780,7 @@
             // lrcp13
             // 
             this.lrcp13.BackColor = System.Drawing.Color.White;
-            this.lrcp13.Location = new System.Drawing.Point(1665, 564);
+            this.lrcp13.Location = new System.Drawing.Point(1457, 564);
             this.lrcp13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp13.Name = "lrcp13";
             this.lrcp13.Size = new System.Drawing.Size(90, 18);
@@ -1790,7 +1790,7 @@
             // lrcw14
             // 
             this.lrcw14.BackColor = System.Drawing.Color.White;
-            this.lrcw14.Location = new System.Drawing.Point(1566, 594);
+            this.lrcw14.Location = new System.Drawing.Point(1358, 594);
             this.lrcw14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcw14.Name = "lrcw14";
             this.lrcw14.Size = new System.Drawing.Size(90, 18);
@@ -1800,7 +1800,7 @@
             // lrcp14
             // 
             this.lrcp14.BackColor = System.Drawing.Color.White;
-            this.lrcp14.Location = new System.Drawing.Point(1665, 594);
+            this.lrcp14.Location = new System.Drawing.Point(1457, 594);
             this.lrcp14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lrcp14.Name = "lrcp14";
             this.lrcp14.Size = new System.Drawing.Size(90, 18);
@@ -1811,7 +1811,7 @@
             // 
             this.label43.AutoSize = true;
             this.label43.BackColor = System.Drawing.SystemColors.Control;
-            this.label43.Location = new System.Drawing.Point(1822, 136);
+            this.label43.Location = new System.Drawing.Point(1614, 136);
             this.label43.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label43.Name = "label43";
             this.label43.Size = new System.Drawing.Size(80, 18);
@@ -1822,7 +1822,7 @@
             // 
             this.label44.AutoSize = true;
             this.label44.BackColor = System.Drawing.SystemColors.Control;
-            this.label44.Location = new System.Drawing.Point(1800, 170);
+            this.label44.Location = new System.Drawing.Point(1592, 170);
             this.label44.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label44.Name = "label44";
             this.label44.Size = new System.Drawing.Size(35, 18);
@@ -1833,7 +1833,7 @@
             // 
             this.label45.AutoSize = true;
             this.label45.BackColor = System.Drawing.SystemColors.Control;
-            this.label45.Location = new System.Drawing.Point(1893, 170);
+            this.label45.Location = new System.Drawing.Point(1685, 170);
             this.label45.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label45.Name = "label45";
             this.label45.Size = new System.Drawing.Size(35, 18);
@@ -1843,7 +1843,7 @@
             // label46
             // 
             this.label46.BackColor = System.Drawing.Color.White;
-            this.label46.Location = new System.Drawing.Point(1770, 204);
+            this.label46.Location = new System.Drawing.Point(1562, 204);
             this.label46.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label46.Name = "label46";
             this.label46.Size = new System.Drawing.Size(90, 18);
@@ -1853,7 +1853,7 @@
             // label47
             // 
             this.label47.BackColor = System.Drawing.Color.White;
-            this.label47.Location = new System.Drawing.Point(1869, 204);
+            this.label47.Location = new System.Drawing.Point(1661, 204);
             this.label47.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label47.Name = "label47";
             this.label47.Size = new System.Drawing.Size(90, 18);
@@ -1863,7 +1863,7 @@
             // label48
             // 
             this.label48.BackColor = System.Drawing.Color.White;
-            this.label48.Location = new System.Drawing.Point(1770, 234);
+            this.label48.Location = new System.Drawing.Point(1562, 234);
             this.label48.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label48.Name = "label48";
             this.label48.Size = new System.Drawing.Size(90, 18);
@@ -1873,7 +1873,7 @@
             // label49
             // 
             this.label49.BackColor = System.Drawing.Color.White;
-            this.label49.Location = new System.Drawing.Point(1869, 234);
+            this.label49.Location = new System.Drawing.Point(1661, 234);
             this.label49.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label49.Name = "label49";
             this.label49.Size = new System.Drawing.Size(90, 18);
@@ -1883,7 +1883,7 @@
             // label50
             // 
             this.label50.BackColor = System.Drawing.Color.White;
-            this.label50.Location = new System.Drawing.Point(1770, 264);
+            this.label50.Location = new System.Drawing.Point(1562, 264);
             this.label50.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label50.Name = "label50";
             this.label50.Size = new System.Drawing.Size(90, 18);
@@ -1893,7 +1893,7 @@
             // label51
             // 
             this.label51.BackColor = System.Drawing.Color.White;
-            this.label51.Location = new System.Drawing.Point(1869, 264);
+            this.label51.Location = new System.Drawing.Point(1661, 264);
             this.label51.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label51.Name = "label51";
             this.label51.Size = new System.Drawing.Size(90, 18);
@@ -1903,7 +1903,7 @@
             // label52
             // 
             this.label52.BackColor = System.Drawing.Color.White;
-            this.label52.Location = new System.Drawing.Point(1770, 294);
+            this.label52.Location = new System.Drawing.Point(1562, 294);
             this.label52.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label52.Name = "label52";
             this.label52.Size = new System.Drawing.Size(90, 18);
@@ -1913,7 +1913,7 @@
             // label53
             // 
             this.label53.BackColor = System.Drawing.Color.White;
-            this.label53.Location = new System.Drawing.Point(1869, 294);
+            this.label53.Location = new System.Drawing.Point(1661, 294);
             this.label53.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label53.Name = "label53";
             this.label53.Size = new System.Drawing.Size(90, 18);
@@ -1923,7 +1923,7 @@
             // label54
             // 
             this.label54.BackColor = System.Drawing.Color.White;
-            this.label54.Location = new System.Drawing.Point(1770, 324);
+            this.label54.Location = new System.Drawing.Point(1562, 324);
             this.label54.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label54.Name = "label54";
             this.label54.Size = new System.Drawing.Size(90, 18);
@@ -1933,7 +1933,7 @@
             // label55
             // 
             this.label55.BackColor = System.Drawing.Color.White;
-            this.label55.Location = new System.Drawing.Point(1869, 324);
+            this.label55.Location = new System.Drawing.Point(1661, 324);
             this.label55.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label55.Name = "label55";
             this.label55.Size = new System.Drawing.Size(90, 18);
@@ -1943,7 +1943,7 @@
             // label56
             // 
             this.label56.BackColor = System.Drawing.Color.White;
-            this.label56.Location = new System.Drawing.Point(1770, 354);
+            this.label56.Location = new System.Drawing.Point(1562, 354);
             this.label56.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label56.Name = "label56";
             this.label56.Size = new System.Drawing.Size(90, 18);
@@ -1953,7 +1953,7 @@
             // label57
             // 
             this.label57.BackColor = System.Drawing.Color.White;
-            this.label57.Location = new System.Drawing.Point(1869, 354);
+            this.label57.Location = new System.Drawing.Point(1661, 354);
             this.label57.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label57.Name = "label57";
             this.label57.Size = new System.Drawing.Size(90, 18);
@@ -1963,7 +1963,7 @@
             // label58
             // 
             this.label58.BackColor = System.Drawing.Color.White;
-            this.label58.Location = new System.Drawing.Point(1770, 384);
+            this.label58.Location = new System.Drawing.Point(1562, 384);
             this.label58.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label58.Name = "label58";
             this.label58.Size = new System.Drawing.Size(90, 18);
@@ -1973,7 +1973,7 @@
             // label75
             // 
             this.label75.BackColor = System.Drawing.Color.White;
-            this.label75.Location = new System.Drawing.Point(1869, 384);
+            this.label75.Location = new System.Drawing.Point(1661, 384);
             this.label75.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label75.Name = "label75";
             this.label75.Size = new System.Drawing.Size(90, 18);
@@ -1983,7 +1983,7 @@
             // label76
             // 
             this.label76.BackColor = System.Drawing.Color.White;
-            this.label76.Location = new System.Drawing.Point(1770, 414);
+            this.label76.Location = new System.Drawing.Point(1562, 414);
             this.label76.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label76.Name = "label76";
             this.label76.Size = new System.Drawing.Size(90, 18);
@@ -1993,7 +1993,7 @@
             // label77
             // 
             this.label77.BackColor = System.Drawing.Color.White;
-            this.label77.Location = new System.Drawing.Point(1869, 414);
+            this.label77.Location = new System.Drawing.Point(1661, 414);
             this.label77.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label77.Name = "label77";
             this.label77.Size = new System.Drawing.Size(90, 18);
@@ -2003,7 +2003,7 @@
             // label78
             // 
             this.label78.BackColor = System.Drawing.Color.White;
-            this.label78.Location = new System.Drawing.Point(1770, 444);
+            this.label78.Location = new System.Drawing.Point(1562, 444);
             this.label78.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label78.Name = "label78";
             this.label78.Size = new System.Drawing.Size(90, 18);
@@ -2013,7 +2013,7 @@
             // label79
             // 
             this.label79.BackColor = System.Drawing.Color.White;
-            this.label79.Location = new System.Drawing.Point(1869, 444);
+            this.label79.Location = new System.Drawing.Point(1661, 444);
             this.label79.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label79.Name = "label79";
             this.label79.Size = new System.Drawing.Size(90, 18);
@@ -2023,7 +2023,7 @@
             // label80
             // 
             this.label80.BackColor = System.Drawing.Color.White;
-            this.label80.Location = new System.Drawing.Point(1770, 474);
+            this.label80.Location = new System.Drawing.Point(1562, 474);
             this.label80.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label80.Name = "label80";
             this.label80.Size = new System.Drawing.Size(90, 18);
@@ -2033,7 +2033,7 @@
             // label81
             // 
             this.label81.BackColor = System.Drawing.Color.White;
-            this.label81.Location = new System.Drawing.Point(1869, 474);
+            this.label81.Location = new System.Drawing.Point(1661, 474);
             this.label81.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label81.Name = "label81";
             this.label81.Size = new System.Drawing.Size(90, 18);
@@ -2043,7 +2043,7 @@
             // label82
             // 
             this.label82.BackColor = System.Drawing.Color.White;
-            this.label82.Location = new System.Drawing.Point(1770, 504);
+            this.label82.Location = new System.Drawing.Point(1562, 504);
             this.label82.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label82.Name = "label82";
             this.label82.Size = new System.Drawing.Size(90, 18);
@@ -2053,7 +2053,7 @@
             // label83
             // 
             this.label83.BackColor = System.Drawing.Color.White;
-            this.label83.Location = new System.Drawing.Point(1869, 504);
+            this.label83.Location = new System.Drawing.Point(1661, 504);
             this.label83.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label83.Name = "label83";
             this.label83.Size = new System.Drawing.Size(90, 18);
@@ -2063,7 +2063,7 @@
             // label84
             // 
             this.label84.BackColor = System.Drawing.Color.White;
-            this.label84.Location = new System.Drawing.Point(1770, 534);
+            this.label84.Location = new System.Drawing.Point(1562, 534);
             this.label84.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label84.Name = "label84";
             this.label84.Size = new System.Drawing.Size(90, 18);
@@ -2073,7 +2073,7 @@
             // label85
             // 
             this.label85.BackColor = System.Drawing.Color.White;
-            this.label85.Location = new System.Drawing.Point(1869, 534);
+            this.label85.Location = new System.Drawing.Point(1661, 534);
             this.label85.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label85.Name = "label85";
             this.label85.Size = new System.Drawing.Size(90, 18);
@@ -2083,7 +2083,7 @@
             // label86
             // 
             this.label86.BackColor = System.Drawing.Color.White;
-            this.label86.Location = new System.Drawing.Point(1770, 564);
+            this.label86.Location = new System.Drawing.Point(1562, 564);
             this.label86.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label86.Name = "label86";
             this.label86.Size = new System.Drawing.Size(90, 18);
@@ -2093,7 +2093,7 @@
             // label87
             // 
             this.label87.BackColor = System.Drawing.Color.White;
-            this.label87.Location = new System.Drawing.Point(1869, 564);
+            this.label87.Location = new System.Drawing.Point(1661, 564);
             this.label87.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label87.Name = "label87";
             this.label87.Size = new System.Drawing.Size(90, 18);
@@ -2103,7 +2103,7 @@
             // label88
             // 
             this.label88.BackColor = System.Drawing.Color.White;
-            this.label88.Location = new System.Drawing.Point(1770, 594);
+            this.label88.Location = new System.Drawing.Point(1562, 594);
             this.label88.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label88.Name = "label88";
             this.label88.Size = new System.Drawing.Size(90, 18);
@@ -2113,7 +2113,7 @@
             // label89
             // 
             this.label89.BackColor = System.Drawing.Color.White;
-            this.label89.Location = new System.Drawing.Point(1869, 594);
+            this.label89.Location = new System.Drawing.Point(1661, 594);
             this.label89.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label89.Name = "label89";
             this.label89.Size = new System.Drawing.Size(90, 18);
