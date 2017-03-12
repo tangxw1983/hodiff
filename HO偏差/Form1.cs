@@ -34,6 +34,7 @@ namespace HO偏差
         private Dictionary<string, double[]> rows;
         private Random rand;
         private const int CNT = 14;
+        private const int PLC_CNT = 3;
         private const double EE_D_INC = 0.001;     // 期望求导增量
         private const double DD_D_INC = 0.001;      // 方差求导增量
         private const double EE_STEP = 0.1;
@@ -83,6 +84,12 @@ namespace HO偏差
         {
             p1 = new double[CNT];
             p3 = new double[CNT];
+            common.Math.Combination comb3 = new common.Math.Combination(CNT, PLC_CNT);
+            p3detail = new double[comb3.Length];
+            
+            common.Math.Combination comb2 = new common.Math.Combination(CNT - 1, PLC_CNT - 1);
+                int[][] _2_combinations = comb2.GetCombinations();
+
             for (int i = 0; i < CNT; i++)
             {
                 common.Math.Calculus.Func r = new common.Math.Calculus.Func(delegate(double x)
@@ -115,9 +122,12 @@ namespace HO偏差
 
                     //return gx * rv;
                 });
-                common.Math.Calculus.MultiFunc f_top3 = new common.Math.Calculus.MultiFunc(delegate(double x)
+
+                common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
                 {
                     double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
+
+                    double[] ret = new double[comb2.Length + 2];     // 前两个为WIN和PLC的概率
 
                     // 选2 Tree最后的结果就是有两个人赢我的概率
                     // 选1 Tree最后的结果是有一个人赢我的概率
@@ -130,13 +140,17 @@ namespace HO偏差
                     //          选A  -  “选1 Tree”  (1-V(A))*1T    --- 
                     //                                                    \ 
                     //                                                       选B - 连乘
-                    //2T(n-2) = 1
+                    //2T(n-2) = (1-V(n-1)) * (1-V(n-2))
                     //2T(d) = V(d)*2T(d+1)+(1-V(d))*1T(d+1)
-                    //1T(n-1) = 1
+                    //1T(n-1) = (1-V(n-1))
                     //1T(d) = V(d)*1T(d+1)+(1-V(d))*LS(d+1)
                     //LS(n-1) = V(n-1)
                     //LS(d) = V(d)*LS(d+1)
                     // 目标计算2T(0)
+                    // 
+                    // 扩展3T、4T、jT
+                    // jT(n-j) = (1-V(n-1))*...*(1-V(n-j))
+                    // jT(d) = V(d)*jT(d+1)+(1-V(d))*(j-1)T(d+1)
 
                     double[] V = new double[CNT - 1];   // 我赢i的概率
                     for (int j = 0; j < CNT; j++)
@@ -150,106 +164,108 @@ namespace HO偏差
                     }
 
                     int n = CNT - 1;
-                    double _2T = (1 - V[n - 1]) * (1 - V[n - 2]);
-                    double _1T = 1 - V[n - 1];
-                    double _LS = 1;
-                    for (int j = n - 3; j >= 0; j--)
+                    double[] T = new double[PLC_CNT];
+                    for (int j = 0; j < PLC_CNT; j++)
                     {
-                        _LS *= V[j + 2];
-                        _1T = V[j + 1] * _1T + (1 - V[j + 1]) * _LS;
-                        _2T = V[j] * _2T + (1 - V[j]) * _1T;
+                        T[j] = 1;
+                        for (int k = 1; k <= j; k++)
+                        {
+                            T[j] *= 1 - V[n - k];
+                        }
                     }
-                    _LS *= V[1];
-                    _1T = V[0] * _1T + (1 - V[0]) * _LS;
-                    _LS *= V[0];
+                    for (int j = n - 1; j >= 0; j--)
+                    {
+                        for (int k = 0; k < PLC_CNT; k++)
+                        {
+                            if (k == 0)
+                                T[k] *= V[j];
+                            else if (j - k >= 0)
+                                T[k] = V[j - k] * T[k] + (1 - V[j - k]) * T[k - 1];
+                        }
+                    }
 
-                    return new common.Math.vector(new double[] { gx * _LS, gx * (_2T + _1T + _LS) });
+                    ret[0] = T[0];
+                    ret[1] = T.Sum();
+
+                    // 计算我跑第三(PLC_CNT)时，前两(PLC_CNT-1)名各种组合的概率
+                    double tmp = 1;
+                    int[] v0indices = new int[CNT - 1];
+                    int v0count = 0,  // 我赢概率为0的数量，即肯定超过我的数量
+                        v1count = 0;  // 不可能超过我的数量
+                    for (int j = 0; j < CNT - 1; j++)
+                    {
+                        if (V[j] == 0)
+                        {
+                            v0indices[v0count++] = j;
+                        }
+                        else if (V[j] == 1)
+                        {
+                            v1count++;
+                        }
+                        else
+                        {
+                            tmp *= V[j];
+                        }
+                    }
+                    // 肯定超过我的数量v0count大于PLC_CNT-1，我的名次肯定低于PLC_CNT，我跑第PLC_CNT的概率为0
+                    // 不可能超过的数量v1count大于CNT-PLC_CNT，我的名次肯定高于PLC_CNT
+                    if (v0count < PLC_CNT && v1count <= CNT - PLC_CNT) 
+                    {
+                        for (int j = 0; j < comb2.Length; j++)
+                        {
+                            int[] c = _2_combinations[j];
+                            int cv0count = 0;
+                            ret[j + 2] = tmp;
+                            for (int k = 0; k < PLC_CNT - 1; k++)
+                            {
+                                if (V[c[k]] == 0)
+                                {
+                                    cv0count++;
+                                }
+                                else if (V[c[k]] == 1)
+                                {
+                                    ret[j + 2] = 0;
+                                    break;
+                                }
+                                else
+                                {
+                                    ret[j + 2] /= V[c[k]];
+                                    ret[j + 2] *= (1 - V[c[k]]);
+                                }
+                            }
+
+                            if (cv0count < v0count)
+                            {
+                                ret[j + 2] = 0;
+                            }
+                        }
+                    }
+
+                    return new common.Math.vector(ret) * gx;
                 });
 
                 //p1[i] = common.Math.Calculus.integrate(f_top1, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 5);
                 //p3[i] = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 5);
 
-                common.Math.vector pv = common.Math.Calculus.integrate(f_top3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
+                common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
                 p1[i] = pv[0];
                 p3[i] = pv[1];
+
+                for (int j = 0; j < comb2.Length; j++)
+                {
+                    int[] c = new int[PLC_CNT];
+                    c[0] = i;
+                    for (int k = 0; k < PLC_CNT - 1; k++)
+                    {
+                        if (_2_combinations[j][k] < i)
+                            c[k + 1] = _2_combinations[j][k];
+                        else
+                            c[k + 1] = _2_combinations[j][k] + 1;
+                    }
+
+                    p3detail[comb3.Index(c)] += pv[j + 2];
+                }
             }
-
-            // 错误：
-            // 这个是以x为分界线时各种组合出现的概率
-            // 但是x不为分界线时，组合依然有概率出现
-            common.Math.Combination comb = new common.Math.Combination(CNT, 3);
-            int[][] combinations = comb.GetCombinations();
-            common.Math.Calculus.MultiFunc f_top3_detail = new common.Math.Calculus.MultiFunc(delegate(double x)
-            {
-                double[] V = new double[CNT];   // i的成绩不超过x的概率
-                for (int j = 0; j < CNT; j++)
-                {
-                    V[j] = 1 - this.gauss(ee[j], dd[j], x);
-                }
-
-                double[] ret = new double[comb.Length];
-
-                double tmp = 1;
-                int[] v0indices = new int[CNT];
-                int v0count = 0, v1count = 0;
-                for (int j = 0; j < CNT; j++)
-                {
-                    if (V[j] == 0)
-                    {
-                        v0indices[v0count++] = j;
-                    }
-                    else if (V[j] == 1)
-                    {
-                        v1count++;
-                    }
-                    else
-                    {
-                        tmp *= V[j];
-                    }
-                }
-
-                if (v0count < 3 && v1count < CNT - 3)
-                {
-                    for (int j = 0; j < comb.Length; j++)
-                    {
-                        int[] c = combinations[j];
-                        int cv0count = 0;
-                        ret[j] = tmp;
-                        for (int k = 0; k < 3; k++)
-                        {
-                            if (V[c[k]] == 0){
-                                cv0count++;
-                            }
-                            else if (V[c[k]] == 1) {
-                                ret[j] = 0;
-                                break;
-                            }
-                            else
-                            {
-                                ret[j] /= V[c[k]];
-                                ret[j] *= (1 - V[c[k]]);
-                            }
-                        }
-
-                        if (cv0count < v0count)
-                        {
-                            ret[j] = 0;
-                        }
-                    }
-                }
-
-                return new common.Math.vector(ret);
-            });
-
-            double from = double.MaxValue, to = double.MinValue;
-            for (int i = 0; i < CNT; i++)
-            {
-                if (from > ee[i] - dd[i] * 6) from = ee[i] - dd[i] * 6;
-                if (to < ee[i] + dd[i] * 6) to = ee[i] + dd[i] * 6;
-            }
-
-            common.Math.vector p3_detail_v = common.Math.Calculus.integrate(f_top3_detail, from, to, Math.Pow(10, -PRECISION), 5);
-            p3detail = p3_detail_v.toArray();
         }
 
         private void btn正向过程_Click(object sender, EventArgs e)
@@ -413,22 +429,27 @@ namespace HO偏差
             return d;
         }
 
-        private double calc_plc_r(double r, int inx, double[] bp, double[] wp, int[][] combinations)
+        private double calc_plc_r(double r, int inx, double[] bp, double[] wp, int[][] combinations)  // 全部投注inx时的赔付率
         {
             double r_tmp = 0;
 
             for (int i = 0; i < combinations.Length; i++)
             {
-                int inx1 = combinations[i][0] < inx ? combinations[i][0] : combinations[i][0] + 1;
-                int inx2 = combinations[i][1] < inx ? combinations[i][1] : combinations[i][1] + 1;
+                double tmp = 0;
+                bool ignore = true;
+                for (int j = 0; j < PLC_CNT; j++)
+                {
+                    tmp += bp[combinations[i][j]];
+                    if (inx == combinations[i][j]) ignore = false;
+                }
 
-                double odds = (r - bp[inx1] - bp[inx2] - bp[inx]) / 3 / bp[inx];
-                double p = wp[inx1] * wp[inx2];
-
-                r_tmp += odds * p;
+                if (!ignore)
+                {
+                    r_tmp += (r - tmp) / 3 / bp[inx] * wp[i];
+                }
             }
 
-            return r_tmp * wp[inx];
+            return r_tmp;
         }
 
         private void btn逆向过程_Click(object sender, EventArgs e)
@@ -522,12 +543,12 @@ namespace HO偏差
                             double maxr1 = double.MinValue, minr1 = double.MaxValue, maxr3 = double.MinValue, minr3 = double.MaxValue;
                             int maxr1_i = -1, minr1_i = -1, maxr3_i = -1, minr3_i = -1;
                             double[] r1 = new double[CNT], r3 = new double[CNT];  // 这个是每个马的回报率，非赔付率
-                            common.Math.Combination comb = new common.Math.Combination(CNT - 1, 2);
+                            common.Math.Combination comb = new common.Math.Combination(CNT, PLC_CNT);
                             int[][] combs = comb.GetCombinations();
                             for (int i = 0; i < CNT; i++)
                             {
                                 r1[i] = s1[i] * p1[i];
-                                r3[i] = this.calc_plc_r(rr3, i, ph3, p3, combs);
+                                r3[i] = this.calc_plc_r(rr3, i, ph3, p3detail, combs);
                                 if (r1[i] > maxr1)
                                 {
                                     maxr1 = r1[i];
@@ -564,7 +585,7 @@ namespace HO偏差
                                 for (int j = 0; j < CNT; j++)
                                 {
                                     d_rr_ee[i] += (tp1[j] * s1[j] - r1[j]) / EE_D_INC * (rr1 - r1[j]);
-                                    d_rr_ee[i] += (this.calc_plc_r(rr3, j, ph3, tp3, combs) - r3[j]) / EE_D_INC * (rr3 - r3[j]);
+                                    d_rr_ee[i] += (this.calc_plc_r(rr3, j, ph3, tp3detail, combs) - r3[j]) / EE_D_INC * (rr3 - r3[j]);
                                 }
                                 ee[i] -= EE_D_INC;
 
@@ -573,7 +594,7 @@ namespace HO偏差
                                 for (int j = 0; j < CNT; j++)
                                 {
                                     d_rr_dd[i] += (tp1[j] * s1[j] - r1[j]) / DD_D_INC * (rr1 - r1[j]);
-                                    d_rr_dd[i] += (this.calc_plc_r(rr3, j, ph3, tp3, combs) - r3[j]) / DD_D_INC * (rr3 - r3[j]);
+                                    d_rr_dd[i] += (this.calc_plc_r(rr3, j, ph3, tp3detail, combs) - r3[j]) / DD_D_INC * (rr3 - r3[j]);
                                 }
                                 dd[i] -= DD_D_INC;
                             }

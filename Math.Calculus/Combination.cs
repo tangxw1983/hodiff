@@ -54,6 +54,7 @@ namespace common.Math
         {
             if (c == null) throw new ArgumentNullException("c");
             if (c.Length != _m) throw new ArgumentException("c length is not equal to m");
+            Array.Sort(c);
 
             long offset = 0;
             int pinx = -1;
