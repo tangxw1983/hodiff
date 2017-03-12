@@ -79,7 +79,7 @@ namespace HO偏差
             }
         }
 
-        private void calc(double[] ee, double[] dd, out double[] p1, out double[] p3)
+        private void calc(double[] ee, double[] dd, out double[] p1, out double[] p3, out double[] p3detail)
         {
             p1 = new double[CNT];
             p3 = new double[CNT];
@@ -96,6 +96,7 @@ namespace HO偏差
                     return ret;
                 });
 
+                // @deprecated f_top1没用了，在f_top3中计算了
                 common.Math.Calculus.Func f_top1 = new common.Math.Calculus.Func(delegate(double x)
                 {
                     double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
@@ -118,6 +119,9 @@ namespace HO偏差
                 {
                     double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
 
+                    // 选2 Tree最后的结果就是有两个人赢我的概率
+                    // 选1 Tree最后的结果是有一个人赢我的概率
+                    // LS最后结果是没人赢我的概率
                     //              
                     //          不选A  - “选2 Tree”   V(A)*2T
                     //       /
@@ -160,9 +164,6 @@ namespace HO偏差
                     _LS *= V[0];
 
                     return new common.Math.vector(new double[] { gx * _LS, gx * (_2T + _1T + _LS) });
-
-                    //double rv = r(x);
-                    //return Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]) * (Math.Exp(-rv) + Math.Exp(-rv) * rv + Math.Exp(-rv) * rv * rv / 2);
                 });
 
                 //p1[i] = common.Math.Calculus.integrate(f_top1, ee[i] - dd[i] * 8, ee[i] + dd[i] * 8, Math.Pow(10, -PRECISION), 5);
@@ -172,6 +173,83 @@ namespace HO偏差
                 p1[i] = pv[0];
                 p3[i] = pv[1];
             }
+
+            // 错误：
+            // 这个是以x为分界线时各种组合出现的概率
+            // 但是x不为分界线时，组合依然有概率出现
+            common.Math.Combination comb = new common.Math.Combination(CNT, 3);
+            int[][] combinations = comb.GetCombinations();
+            common.Math.Calculus.MultiFunc f_top3_detail = new common.Math.Calculus.MultiFunc(delegate(double x)
+            {
+                double[] V = new double[CNT];   // i的成绩不超过x的概率
+                for (int j = 0; j < CNT; j++)
+                {
+                    V[j] = 1 - this.gauss(ee[j], dd[j], x);
+                }
+
+                double[] ret = new double[comb.Length];
+
+                double tmp = 1;
+                int[] v0indices = new int[CNT];
+                int v0count = 0, v1count = 0;
+                for (int j = 0; j < CNT; j++)
+                {
+                    if (V[j] == 0)
+                    {
+                        v0indices[v0count++] = j;
+                    }
+                    else if (V[j] == 1)
+                    {
+                        v1count++;
+                    }
+                    else
+                    {
+                        tmp *= V[j];
+                    }
+                }
+
+                if (v0count < 3 && v1count < CNT - 3)
+                {
+                    for (int j = 0; j < comb.Length; j++)
+                    {
+                        int[] c = combinations[j];
+                        int cv0count = 0;
+                        ret[j] = tmp;
+                        for (int k = 0; k < 3; k++)
+                        {
+                            if (V[c[k]] == 0){
+                                cv0count++;
+                            }
+                            else if (V[c[k]] == 1) {
+                                ret[j] = 0;
+                                break;
+                            }
+                            else
+                            {
+                                ret[j] /= V[c[k]];
+                                ret[j] *= (1 - V[c[k]]);
+                            }
+                        }
+
+                        if (cv0count < v0count)
+                        {
+                            ret[j] = 0;
+                        }
+                    }
+                }
+
+                return new common.Math.vector(ret);
+            });
+
+            double from = double.MaxValue, to = double.MinValue;
+            for (int i = 0; i < CNT; i++)
+            {
+                if (from > ee[i] - dd[i] * 6) from = ee[i] - dd[i] * 6;
+                if (to < ee[i] + dd[i] * 6) to = ee[i] + dd[i] * 6;
+            }
+
+            common.Math.vector p3_detail_v = common.Math.Calculus.integrate(f_top3_detail, from, to, Math.Pow(10, -PRECISION), 5);
+            p3detail = p3_detail_v.toArray();
         }
 
         private void btn正向过程_Click(object sender, EventArgs e)
@@ -213,15 +291,15 @@ namespace HO偏差
                         //double[] ee = new double[] { 0.5290, 0.3828, -0.3311, 0.4858, 0.5788, 0.0668, 0.4494, 0.4878, 0.0000, 0.5260, 0.5960, 0.4944, 0.4302, 0.6743 };
                         //double[] dd = new double[] { 0.1984, 0.4951, 0.5684, 0.1490, 0.1336, 0.6521, 0.1595, 0.2534, 1.0000, 0.1970, 0.1868, 0.2022, 0.4422, 0.0973 };
 
-                        //double[] ee = new double[] { 0.00801567780227197,0,-0.621224622997094,0.0313196089264562,-0.0943667865797723,-0.0915018185467934,-0.334689835242317,-0.426669478149465,-0.493784849761885,-0.840716855060643,-0.577426177718409,-0.258726100557822,-0.783315496883968,-0.315391631012499 };
+                        //double[] ee = new double[] { 0.00801567780227197, 0, -0.621224622997094, 0.0313196089264562, -0.0943667865797723, -0.0915018185467934, -0.334689835242317, -0.426669478149465, -0.493784849761885, -0.840716855060643, -0.577426177718409, -0.258726100557822, -0.783315496883968, -0.315391631012499 };
                         //double[] dd = new double[] { 0.572739966948158, 1, 0.872813330886322, 0.359513914114434, 0.538356241925828, 0.337836391363014, 0.907819085464169, 0.952665051689518, 0.746272143819065, 0.697850654308121, 0.636612974592895, 0.435706391326388, 0.989832968601233, 0.364285053896771 };
 
                         rows["事实期望"] = ee;
                         rows["事实方差"] = dd;
 
                         // 计算事实概率
-                        double[] p1, p3;
-                        this.calc(ee, dd, out p1, out p3);
+                        double[] p1, p3, p3detail;
+                        this.calc(ee, dd, out p1, out p3, out p3detail);
                         rows["TOP1概率"] = p1; // this.normalize(p1, 1);
                         rows["TOP3概率"] = p3; // this.normalize(p3, 3);
 
@@ -335,17 +413,22 @@ namespace HO偏差
             return d;
         }
 
-        private double calc_plc_r(double r, double[] bp, double[] wp, int[] c)
+        private double calc_plc_r(double r, int inx, double[] bp, double[] wp, int[][] combinations)
         {
-            double o_sum = 0;
-            double p_ls = 1;
-            double tmp = (r - bp[c[0]] - bp[c[1]] - bp[c[2]]) / 3;
-            for (int k = 0; k < 3; k++)
+            double r_tmp = 0;
+
+            for (int i = 0; i < combinations.Length; i++)
             {
-                o_sum += tmp / bp[c[k]];
-                p_ls *= wp[c[k]];
+                int inx1 = combinations[i][0] < inx ? combinations[i][0] : combinations[i][0] + 1;
+                int inx2 = combinations[i][1] < inx ? combinations[i][1] : combinations[i][1] + 1;
+
+                double odds = (r - bp[inx1] - bp[inx2] - bp[inx]) / 3 / bp[inx];
+                double p = wp[inx1] * wp[inx2];
+
+                r_tmp += odds * p;
             }
-            return o_sum * p_ls;
+
+            return r_tmp * wp[inx];
         }
 
         private void btn逆向过程_Click(object sender, EventArgs e)
@@ -431,18 +514,20 @@ namespace HO偏差
                         int[] dir_d_rr_ee = new int[CNT], dir_d_rr_dd = new int[CNT];
                         for (int t = 0; ;t++ )
                         {
-                            double[] p1, p3;
-                            this.calc(ee, dd, out p1, out p3);
+                            double[] p1, p3, p3detail;
+                            this.calc(ee, dd, out p1, out p3, out p3detail);
                             double E = 0;
 
                             //double rr = this.calc_rr(s1, p1, s3, p3);
                             double maxr1 = double.MinValue, minr1 = double.MaxValue, maxr3 = double.MinValue, minr3 = double.MaxValue;
                             int maxr1_i = -1, minr1_i = -1, maxr3_i = -1, minr3_i = -1;
                             double[] r1 = new double[CNT], r3 = new double[CNT];  // 这个是每个马的回报率，非赔付率
+                            common.Math.Combination comb = new common.Math.Combination(CNT - 1, 2);
+                            int[][] combs = comb.GetCombinations();
                             for (int i = 0; i < CNT; i++)
                             {
                                 r1[i] = s1[i] * p1[i];
-                                r3[i] = s3[i] * p3[i];
+                                r3[i] = this.calc_plc_r(rr3, i, ph3, p3, combs);
                                 if (r1[i] > maxr1)
                                 {
                                     maxr1 = r1[i];
@@ -464,56 +549,31 @@ namespace HO偏差
                                     minr3_i = i;
                                 }
                             }
-                            common.Math.Combination comb = new common.Math.Combination(CNT, 3);
-                            double[] cr3 = new double[comb.Length];
-                            for (int i = 0; i < comb.Length; i++)
-                            {
-                                int[] citem = comb.Combine(i);
-                                int cinx = comb.Index(citem);
-                                if (cinx != i)
-                                {
-                                    break;
-                                }
-                            }
-                                for (int i = 0; i < comb.Length; i++)
-                                {
-                                    cr3[i] = this.calc_plc_r(rr3, ph3, p3, comb.Combine(i));
-                                }
+                            
+
                             // 求对各个参数的梯度
                             double[] d_rr_ee = new double[CNT];
                             double[] d_rr_dd = new double[CNT];
                             for (int i = 0; i < CNT; i++)
                             {
                                 // if (i == trd_inx) continue; 
-                                double[] tp1, tp3;
+                                double[] tp1, tp3, tp3detail;
 
                                 ee[i] += EE_D_INC;
-                                this.calc(ee, dd, out tp1, out tp3);
+                                this.calc(ee, dd, out tp1, out tp3, out tp3detail);
                                 for (int j = 0; j < CNT; j++)
                                 {
                                     d_rr_ee[i] += (tp1[j] * s1[j] - r1[j]) / EE_D_INC * (rr1 - r1[j]);
-                                }
-                                // 位置彩任意结果的赔付率靠近总体赔付率，
-                                // 任意结果的赔付率 = 赔率之和*概率之积
-                                for (int j = 0; j < comb.Length; j++)
-                                {
-                                    int[] c = comb.Combine(j);
-                                    // 计算调整梯度
-                                    d_rr_ee[i] += (this.calc_plc_r(rr3, ph3, tp3, c) - cr3[j]) / EE_D_INC * (rr3 - cr3[j]);
+                                    d_rr_ee[i] += (this.calc_plc_r(rr3, j, ph3, tp3, combs) - r3[j]) / EE_D_INC * (rr3 - r3[j]);
                                 }
                                 ee[i] -= EE_D_INC;
 
                                 dd[i] += DD_D_INC;
-                                this.calc(ee, dd, out tp1, out tp3);
+                                this.calc(ee, dd, out tp1, out tp3, out tp3detail);
                                 for (int j = 0; j < CNT; j++)
                                 {
                                     d_rr_dd[i] += (tp1[j] * s1[j] - r1[j]) / DD_D_INC * (rr1 - r1[j]);
-                                }
-                                for (int j = 0; j < comb.Length; j++)
-                                {
-                                    int[] c = comb.Combine(j);
-                                    // 计算调整梯度
-                                    d_rr_dd[i] += (this.calc_plc_r(rr3, ph3, tp3, c) - cr3[j]) / DD_D_INC * (rr3 - cr3[j]);
+                                    d_rr_dd[i] += (this.calc_plc_r(rr3, j, ph3, tp3, combs) - r3[j]) / DD_D_INC * (rr3 - r3[j]);
                                 }
                                 dd[i] -= DD_D_INC;
                             }
@@ -551,7 +611,7 @@ namespace HO偏差
                             ee[trd_inx] = 0;
                             dd[trd_inx] = 1;
 
-                            E = r1.Sum(x => (x - rr1) * (x - rr1)) + cr3.Sum(x => (x - rr3) * (x - rr3));
+                            E = r1.Sum(x => (x - rr1) * (x - rr1)) + r3.Sum(x => (x - rr3) * (x - rr3));
                             this.Invoke(new MethodInvoker(delegate
                             {
                                 for (int i = 0; i < CNT; i++)

@@ -96,6 +96,16 @@ namespace common.Math
             return ret;
         }
 
+        public int[][] GetCombinations()
+        {
+            int[][] ret = new int[_length][];
+            for (int i = 0; i < _length; i++)
+            {
+                ret[i] = Combine(i);
+            }
+            return ret;
+        }
+
         public static int[] Random(int n, int m)
         {
             Random rand = new System.Random();
