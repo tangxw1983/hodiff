@@ -39,7 +39,7 @@ namespace HO偏差
         private const double DD_D_INC = 0.001;      // 方差求导增量
         private const double EE_STEP = 0.1;
         private const double DD_STEP = 0.1;
-        private const double STEP_DECAY = 0.1;     // 步长衰减
+        private const double STEP_DECAY = 0.01;     // 步长衰减
         private const int PRECISION = 5;
 
         private Thread _t_d, _t_o;
@@ -478,6 +478,13 @@ namespace HO偏差
 
                         double rr1 = 1 / s1.Sum(x => 1 / x);
 
+                        // 计算WIN投注比率
+                        double[] ph1 = new double[CNT];
+                        for (int i = 0; i < CNT; i++)
+                        {
+                            ph1[i] = rr1 / s1[i];
+                        }
+
                         // 计算PLC赔付率
                         IOrderedEnumerable<double> sorted_s3 = s3.OrderBy(x => x);
                         double o3 = sorted_s3.Skip(2).First();
@@ -539,6 +546,16 @@ namespace HO偏差
                             this.calc(ee, dd, out p1, out p3, out p3detail);
                             double E = 0;
 
+                            // 交叉熵损失以及交叉熵损失对与各个概率的梯度
+                            double[] grad_p1 = new double[CNT], grad_p3 = new double[CNT];
+                            for (int i = 0; i < CNT; i++)
+                            {
+                                E += -(ph1[i] * Math.Log(p1[i]) + (1 - ph1[i]) * Math.Log(1 - p1[i]));
+                                E += -(ph3[i] * Math.Log(p3[i]) + (1 - ph3[i]) * Math.Log(1 - p3[i]));
+                                grad_p1[i] = -(ph1[i] / p1[i] - (1 - ph1[i]) / (1 - p1[i]));
+                                grad_p3[i] = -(ph3[i] / p3[i] - (1 - ph3[i]) / (1 - p3[i]));
+                            }
+
                             //double rr = this.calc_rr(s1, p1, s3, p3);
                             double maxr1 = double.MinValue, minr1 = double.MaxValue, maxr3 = double.MinValue, minr3 = double.MaxValue;
                             int maxr1_i = -1, minr1_i = -1, maxr3_i = -1, minr3_i = -1;
@@ -584,8 +601,10 @@ namespace HO偏差
                                 this.calc(ee, dd, out tp1, out tp3, out tp3detail);
                                 for (int j = 0; j < CNT; j++)
                                 {
-                                    d_rr_ee[i] += (tp1[j] * s1[j] - r1[j]) / EE_D_INC * (rr1 - r1[j]);
-                                    d_rr_ee[i] += (this.calc_plc_r(rr3, j, ph3, tp3detail, combs) - r3[j]) / EE_D_INC * (rr3 - r3[j]);
+                                    // 第j匹马的WIN概率对第i匹马的均值的梯度 = (tp1[j] - p1[j]) / EE_D_INC
+                                    d_rr_ee[i] += (tp1[j] - p1[j]) / EE_D_INC * grad_p1[j];
+                                    // 第j匹马的PLC概率对第i匹马的均值的梯度 = (tp3[j] - p3[j]) / EE_D_INC
+                                    d_rr_ee[i] += (tp3[j] - p3[j]) / EE_D_INC * grad_p3[j];
                                 }
                                 ee[i] -= EE_D_INC;
 
@@ -593,8 +612,10 @@ namespace HO偏差
                                 this.calc(ee, dd, out tp1, out tp3, out tp3detail);
                                 for (int j = 0; j < CNT; j++)
                                 {
-                                    d_rr_dd[i] += (tp1[j] * s1[j] - r1[j]) / DD_D_INC * (rr1 - r1[j]);
-                                    d_rr_dd[i] += (this.calc_plc_r(rr3, j, ph3, tp3detail, combs) - r3[j]) / DD_D_INC * (rr3 - r3[j]);
+                                    // 第j匹马的WIN概率对第i匹马的方差的梯度 = (tp1[j] - p1[j]) / DD_D_INC
+                                    d_rr_dd[i] += (tp1[j] - p1[j]) / DD_D_INC * grad_p1[j];
+                                    // 第j匹马的PLC概率对第i匹马的方差的梯度 = (tp3[j] - p3[j]) / DD_D_INC
+                                    d_rr_dd[i] += (tp3[j] - p3[j]) / DD_D_INC * grad_p3[j];
                                 }
                                 dd[i] -= DD_D_INC;
                             }
@@ -617,8 +638,10 @@ namespace HO偏差
                                 else
                                     dir_d_rr_dd[i] = 0;
 
-                                ee[i] += Math.Tanh(d_rr_ee[i]) * EE_STEP / (1 + t * STEP_DECAY) * (1 + Math.Abs(dir_d_rr_ee[i]) * STEP_DECAY);
-                                dd[i] += Math.Tanh(d_rr_dd[i]) * DD_STEP / (1 + t * STEP_DECAY) * (1 + Math.Abs(dir_d_rr_dd[i]) * STEP_DECAY);
+                                // 向负梯度方向调整
+                                ee[i] += -d_rr_ee[i] * EE_STEP / (1 + t * STEP_DECAY) * (1 + Math.Abs(dir_d_rr_ee[i]) * STEP_DECAY);
+                                dd[i] += -d_rr_dd[i] * DD_STEP / (1 + t * STEP_DECAY) * (1 + Math.Abs(dir_d_rr_dd[i]) * STEP_DECAY);
+
                                 if (dd[i] < 0.0001) dd[i] = 0.0001;
                             }
 
@@ -632,7 +655,7 @@ namespace HO偏差
                             ee[trd_inx] = 0;
                             dd[trd_inx] = 1;
 
-                            E = r1.Sum(x => (x - rr1) * (x - rr1)) + r3.Sum(x => (x - rr3) * (x - rr3));
+                            //E = r1.Sum(x => (x - rr1) * (x - rr1)) + r3.Sum(x => (x - rr3) * (x - rr3));
                             this.Invoke(new MethodInvoker(delegate
                             {
                                 for (int i = 0; i < CNT; i++)
