@@ -37,14 +37,26 @@ namespace HO偏差
         private const int PLC_CNT = 3;
         private const double EE_D_INC = 0.001;     // 期望求导增量
         private const double DD_D_INC = 0.001;      // 方差求导增量
-        private const double EE_STEP = 0.1;
-        private const double DD_STEP = 0.1;
+        private const double EE_STEP = 0.8;
+        private const double DD_STEP = 0.8;
         private const double STEP_DECAY = 0.01;     // 步长衰减
         private const int PRECISION = 5;
+        private double SQRT_2_PI = Math.Sqrt(2 * Math.PI);
 
         private Thread _t_d, _t_o;
 
         private Label[] lves, lvds, lres, lrds, lpws, lpps, lEs, lrcws, lrcps, lrfws, lrfps;
+
+        private Dictionary<double, double> _cached_exp_result = new Dictionary<double, double>();
+        private double exp(double x)
+        {
+            double r = Math.Round(x, PRECISION);
+            if (!_cached_exp_result.ContainsKey(r))
+            {
+                _cached_exp_result[r] = Math.Exp(r);
+            }
+            return _cached_exp_result[r];
+        }
 
         private Dictionary<double, double> _cached_gauss_result = new Dictionary<double, double>();
         private double gauss(double e, double d, double x)   // 计算P(v>x)
@@ -68,7 +80,7 @@ namespace HO偏差
                 {
                     _cached_gauss_result[r] = Math.Round(0.5 - common.Math.Calculus.integrate(new common.Math.Calculus.Func(delegate(double y)
                     {
-                        return Math.Exp(-y * y / 2) / Math.Sqrt(2 * Math.PI);
+                        return this.exp(-y * y / 2) / SQRT_2_PI;
                     }), 0, r, Math.Pow(10, -PRECISION)), PRECISION);
                 }
                 return _cached_gauss_result[r];
@@ -106,7 +118,7 @@ namespace HO偏差
                 // @deprecated f_top1没用了，在f_top3中计算了
                 common.Math.Calculus.Func f_top1 = new common.Math.Calculus.Func(delegate(double x)
                 {
-                    double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
+                    double gx = this.exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
                     double rx = 1;
                     for (int j = 0; j < CNT; j++)
                     {
@@ -125,7 +137,7 @@ namespace HO偏差
 
                 common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
                 {
-                    double gx = Math.Exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (Math.Sqrt(2 * Math.PI) * dd[i]);
+                    double gx = this.exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
 
                     double[] ret = new double[comb2.Length + 2];     // 前两个为WIN和PLC的概率
 
