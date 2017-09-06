@@ -51,4 +51,16 @@ namespace HO偏差
             }
         }
     }
+
+    class Comb2Table : Dictionary<string, double>
+    {
+        public Comb2Table(HrsTable owner)
+        {
+            _owner = owner;
+        }
+
+        private HrsTable _owner;
+
+
+    }
 }

@@ -125,7 +125,7 @@ namespace HO偏差
             }
         }
 
-        public static void calcProbility(double[] ee, double[] dd, out double[] p1, out double[] p3, ref double[] p3detail)
+        public static void calcProbility(double[] ee, double[] dd, out double[] p1, out double[] p3)
         {
             int CNT = ee.Length;
             int PLC_CNT = 3;
@@ -134,116 +134,272 @@ namespace HO偏差
             p1 = new double[CNT];
             p3 = new double[CNT];
 
-            if (p3detail == null)
+            for (int i = 0; i < CNT; i++)
             {
-                for (int i = 0; i < CNT; i++)
+                common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
                 {
-                    common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
-                    {
-                        double gx = exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
+                    double gx = exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
 
-                        double[] ret = new double[2];     // 前两个为WIN和PLC的概率
+                    double[] ret = new double[2];     // 前两个为WIN和PLC的概率
 
-                        double[] V, T;
+                    double[] V, T;
 
-                        calcFx(CNT, PLC_CNT, i, x, ee, dd, out V, out T);
+                    calcFx(CNT, PLC_CNT, i, x, ee, dd, out V, out T);
 
-                        ret[0] = T[0];
-                        ret[1] = T.Sum();
+                    ret[0] = T[0];
+                    ret[1] = T.Sum();
 
-                        return new common.Math.vector(ret) * gx;
-                    });
+                    return new common.Math.vector(ret) * gx;
+                });
 
-                    common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
-                    p1[i] = pv[0];
-                    p3[i] = pv[1];
-                }
+                common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
+                p1[i] = pv[0];
+                p3[i] = pv[1];
             }
-            else
+        }
+
+        public static void calcProbility(double[] ee, double[] dd, out double[] p1, out double[] p3, out double[] pq_win, out double[] pq_plc)
+        {
+            int CNT = ee.Length;
+            int PLC_CNT = 3;
+            if (CNT <= 6) PLC_CNT = 2;
+
+            p1 = new double[CNT];
+            p3 = new double[CNT];
+
+            // 需要计算各种组合细节
+            common.Math.Combination combq = new common.Math.Combination(CNT, 2);
+            pq_win = new double[combq.Length];
+            pq_plc = new double[combq.Length];
+
+            common.Math.Combination comb_plc = new common.Math.Combination(CNT - 1, PLC_CNT - 1);
+            int[][] _plc_combinations = comb_plc.GetCombinations();
+            common.Math.Combination comb2 = null;
+            int[][] _2_combinations = null;
+            if (PLC_CNT > 3)
             {
-                // 需要计算各种组合细节
-                common.Math.Combination comb3 = new common.Math.Combination(CNT, PLC_CNT);
-                p3detail = new double[comb3.Length];
+                comb2 = new common.Math.Combination(PLC_CNT - 1, 2);
+                _2_combinations = comb2.GetCombinations();
+            }
 
-                common.Math.Combination comb2 = new common.Math.Combination(CNT - 1, PLC_CNT - 1);
-                int[][] _2_combinations = comb2.GetCombinations();
-
-                for (int i = 0; i < CNT; i++)
+            for (int i = 0; i < CNT; i++)
+            {
+                common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
                 {
-                    common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
+                    double gx = exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
+
+                    double[] ret;     // 前两个为WIN和PLC的概率
+
+                    if (PLC_CNT <= 3)
                     {
-                        double gx = exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
+                        ret = new double[comb_plc.Length + 2];
+                    }
+                    else
+                    {
+                        // 如果PLC_CNT超过3，为了计算前两名的概率，还必须计算我第二名时，其他马第一名的概率
+                        ret = new double[comb_plc.Length + CNT - 1 + 2];
+                    }
 
-                        double[] ret = new double[comb2.Length + 2];     // 前两个为WIN和PLC的概率
+                    double[] V, T;
 
-                        double[] V, T;
+                    calcFx(CNT, PLC_CNT, i, x, ee, dd, out V, out T);
 
-                        calcFx(CNT, PLC_CNT, i, x, ee, dd, out V, out T);
+                    ret[0] = T[0];
+                    ret[1] = T.Sum();
 
-                        ret[0] = T[0];
-                        ret[1] = T.Sum();
-
-                        // 计算我跑第三(PLC_CNT)时，前两(PLC_CNT-1)名各种组合的概率
-                        double tmp = 1;  // 去掉不可能赢之后的概率连乘
-                        int v0count = 0,  // 我赢概率为0的数量，即肯定超过我的数量
-                            v1count = 0;  // 不可能超过我的数量
-                        for (int j = 0; j < CNT - 1; j++)
+                    // 计算我跑第三(PLC_CNT)时，前两(PLC_CNT-1)名各种组合的概率
+                    double tmp = 1;  // 去掉不可能赢之后的概率连乘
+                    int v0count = 0,  // 我赢概率为0的数量，即肯定超过我的数量
+                        v1count = 0;  // 不可能超过我的数量
+                    for (int j = 0; j < CNT - 1; j++)
+                    {
+                        if (V[j] == 0)
                         {
-                            if (V[j] == 0)
+                            v0count++;
+                        }
+                        else if (V[j] == 1)
+                        {
+                            v1count++;
+                        }
+                        else
+                        {
+                            tmp *= V[j];
+                        }
+                    }
+                    // 肯定超过我的数量v0count大于PLC_CNT-1，我的名次肯定低于PLC_CNT，我跑第PLC_CNT的概率为0
+                    // 不可能超过的数量v1count大于CNT-PLC_CNT，我的名次肯定高于PLC_CNT
+                    if (v0count < PLC_CNT && v1count <= CNT - PLC_CNT)
+                    {
+                        for (int j = 0, j2 = 2; j < comb_plc.Length; j++, j2++)
+                        {
+                            int[] c = _plc_combinations[j];
+                            int cv0count = 0;
+                            ret[j2] = tmp;
+                            for (int k = 0; k < PLC_CNT - 1; k++)
                             {
+                                if (V[c[k]] == 0)
+                                {
+                                    cv0count++;
+                                }
+                                else if (V[c[k]] == 1)  // 我肯定赢的人在我前面，这个组合不可能存在
+                                {
+                                    ret[j2] = 0;
+                                    break;
+                                }
+                                else
+                                {
+                                    ret[j2] /= V[c[k]];
+                                    ret[j2] *= (1 - V[c[k]]);
+                                }
                             }
-                            else if (V[j] == 1)
+
+                            if (cv0count < v0count)  // 如果组合中没有包含全部肯定赢我的人，这个组合不可能存在
                             {
-                                v1count++;
+                                ret[j2] = 0;
+                            }
+                        }
+                    }
+                    // 计算我第二名时各个人第一名的概率
+                    if (PLC_CNT > 3 && v0count < 2 && v1count <= CNT - 2)
+                    {
+                        for (int j = 0, j2 = 2 + (int)comb_plc.Length; j < CNT - 1; j++, j2++)
+                        {
+                            if (v0count == 1)
+                            {
+                                if (V[j] == 0)
+                                    ret[j2] = tmp;
+                                else
+                                    ret[j2] = 0;
                             }
                             else
                             {
-                                tmp *= V[j];
+                                if (V[j] == 1)
+                                {
+                                    ret[j2] = 0;
+                                }
+                                else
+                                {
+                                    ret[j2] /= V[j];
+                                    ret[j2] *= (1 - V[j]);
+                                }
                             }
                         }
-                        // 肯定超过我的数量v0count大于PLC_CNT-1，我的名次肯定低于PLC_CNT，我跑第PLC_CNT的概率为0
-                        // 不可能超过的数量v1count大于CNT-PLC_CNT，我的名次肯定高于PLC_CNT
-                        if (v0count < PLC_CNT && v1count <= CNT - PLC_CNT)
+                    }
+
+                    return new common.Math.vector(ret) * gx;
+                });
+
+                common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
+                p1[i] = pv[0];
+                p3[i] = pv[1];
+
+                if (PLC_CNT > 3)
+                {
+                    // PLC_CNT大于3，Q的概率需要通过我第二名时，其他各马第一名的概率计算
+
+                    int[] c = new int[2];
+                    c[0] = i;
+
+                    // Q的概率
+                    for (int j = 0, j2 = 2 + (int)comb_plc.Length; j < PLC_CNT - 1; j++, j2++)
+                    {
+                        for (int k = 0; k < PLC_CNT - 1; k++)
                         {
-                            for (int j = 0; j < comb2.Length; j++)
-                            {
-                                int[] c = _2_combinations[j];
-                                int cv0count = 0;
-                                ret[j + 2] = tmp;
-                                for (int k = 0; k < PLC_CNT - 1; k++)
-                                {
-                                    if (V[c[k]] == 0)
-                                    {
-                                        cv0count++;
-                                    }
-                                    else if (V[c[k]] == 1)
-                                    {
-                                        ret[j + 2] = 0;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        ret[j + 2] /= V[c[k]];
-                                        ret[j + 2] *= (1 - V[c[k]]);
-                                    }
-                                }
+                            if (k < i)
+                                c[1] = k;
+                            else
+                                c[1] = k + 1;
 
-                                if (cv0count < v0count)
-                                {
-                                    ret[j + 2] = 0;
-                                }
-                            }
+                            pq_win[combq.Index(c)] += pv[j2];
+                        }
+                    }
+
+                    // QP的概率
+                    for (int j = 0, j2 = 2; j < comb_plc.Length; j++, j2++)
+                    {
+                        // 和我的组合
+                        c[0] = i;
+                        for (int k = 0; k < PLC_CNT - 1; k++)
+                        {
+                            if (_plc_combinations[j][k] < i)
+                                c[1] = _plc_combinations[j][k];
+                            else
+                                c[1] = _plc_combinations[j][k] + 1;
+
+                            pq_plc[combq.Index(c)] += pv[j2];
                         }
 
-                        return new common.Math.vector(ret) * gx;
-                    });
+                        // 没有我的组合
+                        for (int k = 0; k < _2_combinations.Length; k++)
+                        {
+                            if (_plc_combinations[j][_2_combinations[k][0]] < i)
+                                c[0] = _plc_combinations[j][_2_combinations[k][0]];
+                            else
+                                c[0] = _plc_combinations[j][_2_combinations[k][0]] + 1;
 
-                    common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
-                    p1[i] = pv[0];
-                    p3[i] = pv[1];
+                            if (_plc_combinations[j][_2_combinations[k][1]] < i)
+                                c[1] = _plc_combinations[j][_2_combinations[k][1]];
+                            else
+                                c[1] = _plc_combinations[j][_2_combinations[k][1]] + 1;
+
+                            pq_plc[combq.Index(c)] += pv[j2];
+                        }
+                    }
+                }
+                else if (PLC_CNT == 3)
+                {
+                    // PLC_CNT等于3，Q的概率根据我第三名时，前两名的概率计算
+
+                    int[] c = new int[2];
+
+                    for (int j = 0, j2 = 2; j < comb_plc.Length; j++, j2++)
+                    {
+                        // 和我的组合
+                        c[0] = i;
+                        for (int k = 0; k < PLC_CNT - 1; k++)
+                        {
+                            if (_plc_combinations[j][k] < i)
+                                c[1] = _plc_combinations[j][k];
+                            else
+                                c[1] = _plc_combinations[j][k] + 1;
+
+                            pq_plc[combq.Index(c)] += pv[j2];
+                        }
+
+                        // 没有我的组合
+                        if (_plc_combinations[j][0] < i)
+                            c[0] = _plc_combinations[j][0];
+                        else
+                            c[0] = _plc_combinations[j][0] + 1;
+
+                        if (_plc_combinations[j][1] < i)
+                            c[1] = _plc_combinations[j][1];
+                        else
+                            c[1] = _plc_combinations[j][1] + 1;
+
+                        pq_win[combq.Index(c)] += pv[j2];
+                        pq_plc[combq.Index(c)] += pv[j2];
+                    }
+                }
+                else if (PLC_CNT == 2)
+                {
+                    // PLC_CNT等于2，Q/QP是一样的
+
+                    int[] c = new int[2];
+                    c[0] = i;
+
+                    for (int j = 0, j2 = 2; j < comb_plc.Length; j++, j2++)
+                    {
+                        // 只有和我的组合
+                        if (_plc_combinations[j][0] < i)
+                            c[1] = _plc_combinations[j][0];
+                        else
+                            c[1] = _plc_combinations[j][0] + 1;
+
+                        pq_win[combq.Index(c)] += pv[j2];
+                    }
                 }
             }
-            
         }
 
         public static double fit(HrsTable table, double epsilon)
