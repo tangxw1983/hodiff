@@ -1,0 +1,40 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace HO偏差
+{
+    public partial class FormTestFitting : Form
+    {
+        public FormTestFitting()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            HrsTable table = new HrsTable();
+            table.Add(new Hrs("1", 5.5, 2.3));
+            table.Add(new Hrs("2", 9.1, 1.6));
+            table.Add(new Hrs("3", 44.9, 8.2));
+            table.Add(new Hrs("4", 4.9, 2.7));
+            table.Add(new Hrs("5", 16.3, 2.4));
+            table.Add(new Hrs("6", 3.4, 1.5));
+            table.Add(new Hrs("7", 15.6, 2.3));
+            table.Add(new Hrs("8", 33.3, 4.4));
+            table.Add(new Hrs("9", 17.3, 2.7));
+            table.Add(new Hrs("10", 16.1, 3.4));
+            table.Add(new Hrs("11", 40.1, 6.4));
+            table.Add(new Hrs("12", 36, 5.7));
+            table.Add(new Hrs("13", 42.7, 6.7));
+
+            double E = Fitting.fit(table, 0.00001);
+            MessageBox.Show(E.ToString());
+        }
+    }
+}

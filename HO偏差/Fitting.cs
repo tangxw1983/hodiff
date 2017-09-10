@@ -443,6 +443,49 @@ namespace HO偏差
                 }
             }
 
+            // 计算Q的投注比例
+            double[] pqw = null;
+            if (table.HasSpQ)
+            {
+                double[] sqw = table.SpQ.Sp;
+                pqw = new double[sqw.Length];
+                
+                double rqw = 1 / sqw.Sum(x => 1 / x);
+                for (int i = 0; i < pqw.Length; i++)
+                {
+                    pqw[i] = rqw / sqw[i];
+                }
+            }
+
+            // 计算QP的投注比例
+            double[] pqp = null;
+            if (table.HasSpQp)
+            {
+                double[] sqp = table.SpQp.Sp;
+                pqp = new double[sqp.Length];
+                
+                // 计算QP赔付率
+                IOrderedEnumerable<double> sorted_sqp = sqp.OrderBy(x => x);
+                double oqp3 = sorted_sqp.Skip(2).First();
+                double aqp = 3 * (oqp3 - 1) / (3 * (oqp3 - 1) + 1) * sorted_s3.Take(2).Sum(x => 1 / (3 * (x - 1)));
+                double bqp = sorted_sqp.Skip(2).Sum(x => 1 / (3 * (x - 1) + 1));
+                double rqp = (aqp + 1) / (bqp + b);
+
+                // 计算投注比例
+                double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(2).Sum(x => 1 / (3 * x - 2)) - 1) * (3 * o3 - 2));
+                for (int i = 0; i < pqp.Length; i++)
+                {
+                    if (sqp[i] <= oqp3)
+                    {
+                        pqp[i] = pqp3 * (oqp3 - 1) / (sqp[i] - 1);
+                    }
+                    else
+                    {
+                        pqp[i] = pqp3 * (3 * oqp3 - 2) / (3 * sqp[i] - 2);
+                    }
+                }
+            }
+
             // 设定top1第3的项期望=0，方差=1
             double trd_s1 = s1.OrderBy(x => x).Skip(2).First();
             int trd_inx = -1;
@@ -474,10 +517,14 @@ namespace HO偏差
             }
 
             double lastE = double.MaxValue;
+            int reach_count = 0;
             for (int t = 0; ; t++)
             {
-                double[] p1, p3;
-                calcProbility(ee, dd, out p1, out p3);
+                double[] p1, p3, pq1 = null, pq3 = null;
+                if (pqw != null || pqp != null)
+                    calcProbility(ee, dd, out p1, out p3, out pq1, out pq3);
+                else
+                    calcProbility(ee, dd, out p1, out p3);
                 double E = 0;
 
                 // 交叉熵损失以及交叉熵损失对与各个概率的梯度
@@ -489,16 +536,39 @@ namespace HO偏差
                     grad_p1[i] = -(ph1[i] / p1[i] - (1 - ph1[i]) / (1 - p1[i]));
                     grad_p3[i] = -(ph3[i] / p3[i] - (1 - ph3[i]) / (1 - p3[i]));
                 }
+                double[] grad_pq1 = null, grad_pq3 = null;
+                if (pqw != null)
+                {
+                    grad_pq1 = new double[pqw.Length];
+                    for (int i = 0; i < pqw.Length; i++)
+                    {
+                        E += -(pqw[i] * Math.Log(pq1[i]) + (1 - pqw[i]) * Math.Log(1 - pq1[i]));
+                        grad_pq1[i] = -(pqw[i] / pq1[i] - (1 - pqw[i]) / (1 - pq1[i]));
+                    }
+                }
+                if (pqp != null)
+                {
+                    grad_pq3 = new double[pqp.Length];
+                    for (int i = 0; i < pqp.Length; i++)
+                    {
+                        E += -(pqp[i] * Math.Log(pq3[i]) + (1 - pqp[i]) * Math.Log(1 - pq3[i]));
+                        grad_pq1[i] = -(pqp[i] / pq3[i] - (1 - pqp[i]) / (1 - pq3[i]));
+                    }
+                }
 
                 // 求对各个参数的梯度
                 double[] d_rr_ee = new double[CNT];
                 double[] d_rr_dd = new double[CNT];
                 for (int i = 0; i < CNT; i++)
                 {
-                    double[] tp1, tp3;
+                    double[] tp1, tp3, tpq1 = null, tpq3 = null;
 
                     ee[i] += EE_D_INC;
-                    calcProbility(ee, dd, out tp1, out tp3);
+                    if (pqw != null || pqp != null)
+                        calcProbility(ee, dd, out tp1, out tp3, out tpq1, out tpq3);
+                    else
+                        calcProbility(ee, dd, out tp1, out tp3);
+
                     for (int j = 0; j < CNT; j++)
                     {
                         // 第j匹马的WIN概率对第i匹马的均值的梯度 = (tp1[j] - p1[j]) / EE_D_INC
@@ -506,16 +576,47 @@ namespace HO偏差
                         // 第j匹马的PLC概率对第i匹马的均值的梯度 = (tp3[j] - p3[j]) / EE_D_INC
                         d_rr_ee[i] += (tp3[j] - p3[j]) / EE_D_INC * grad_p3[j];
                     }
+                    if (pqw != null)
+                    {
+                        for (int j = 0; j < pqw.Length; j++)
+                        {
+                            d_rr_ee[i] += (tpq1[j] - pq1[j]) / EE_D_INC * grad_pq1[j];
+                        }
+                    }
+                    if (pqp != null)
+                    {
+                        for (int j = 0; j < pqp.Length; j++)
+                        {
+                            d_rr_ee[i] += (tpq3[j] - pq3[j]) / EE_D_INC * grad_pq3[j];
+                        }
+                    }
                     ee[i] -= EE_D_INC;
 
                     dd[i] += DD_D_INC;
-                    calcProbility(ee, dd, out tp1, out tp3);
+                    if (pqw != null || pqp != null)
+                        calcProbility(ee, dd, out tp1, out tp3, out tpq1, out tpq3);
+                    else
+                        calcProbility(ee, dd, out tp1, out tp3);
                     for (int j = 0; j < CNT; j++)
                     {
                         // 第j匹马的WIN概率对第i匹马的方差的梯度 = (tp1[j] - p1[j]) / DD_D_INC
                         d_rr_dd[i] += (tp1[j] - p1[j]) / DD_D_INC * grad_p1[j];
                         // 第j匹马的PLC概率对第i匹马的方差的梯度 = (tp3[j] - p3[j]) / DD_D_INC
                         d_rr_dd[i] += (tp3[j] - p3[j]) / DD_D_INC * grad_p3[j];
+                    }
+                    if (pqw != null)
+                    {
+                        for (int j = 0; j < pqw.Length; j++)
+                        {
+                            d_rr_dd[i] += (tpq1[j] - pq1[j]) / DD_D_INC * grad_pq1[j];
+                        }
+                    }
+                    if (pqp != null)
+                    {
+                        for (int j = 0; j < pqp.Length; j++)
+                        {
+                            d_rr_dd[i] += (tpq3[j] - pq3[j]) / DD_D_INC * grad_pq3[j];
+                        }
                     }
                     dd[i] -= DD_D_INC;
                 }
@@ -539,8 +640,16 @@ namespace HO偏差
                 }
                 ee[trd_inx] = 0;
                 dd[trd_inx] = 1;
-
-                if (lastE - E < epsilon) break;
+                
+                if (Math.Abs(lastE - E) < epsilon)
+                {
+                    reach_count++;
+                    if (reach_count > 3) break;
+                }
+                else
+                {
+                    reach_count = 0;
+                }
                 lastE = E;
             }
 

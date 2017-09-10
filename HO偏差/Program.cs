@@ -15,7 +15,10 @@ namespace HO偏差
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            //RaceData test = RaceData.Load("sp-2017-03-19-1-1.dat");
+
+            Application.Run(new FormBuildTestDataSpecifiedPoint());
         }
     }
 }
