@@ -447,13 +447,16 @@ namespace HO偏差
             double[] pqw = null;
             if (table.HasSpQ)
             {
-                double[] sqw = table.SpQ.Sp;
-                pqw = new double[sqw.Length];
-                
-                double rqw = 1 / sqw.Sum(x => 1 / x);
-                for (int i = 0; i < pqw.Length; i++)
+                if (table.SpQ.Count > 0)
                 {
-                    pqw[i] = rqw / sqw[i];
+                    double[] sqw = table.SpQ.Sp;
+                    pqw = new double[sqw.Length];
+
+                    double rqw = 1 / sqw.Sum(x => 1 / x);
+                    for (int i = 0; i < pqw.Length; i++)
+                    {
+                        pqw[i] = rqw / sqw[i];
+                    }
                 }
             }
 
@@ -461,27 +464,30 @@ namespace HO偏差
             double[] pqp = null;
             if (table.HasSpQp)
             {
-                double[] sqp = table.SpQp.Sp;
-                pqp = new double[sqp.Length];
-                
-                // 计算QP赔付率
-                IOrderedEnumerable<double> sorted_sqp = sqp.OrderBy(x => x);
-                double oqp3 = sorted_sqp.Skip(2).First();
-                double aqp = 3 * (oqp3 - 1) / (3 * (oqp3 - 1) + 1) * sorted_s3.Take(2).Sum(x => 1 / (3 * (x - 1)));
-                double bqp = sorted_sqp.Skip(2).Sum(x => 1 / (3 * (x - 1) + 1));
-                double rqp = (aqp + 1) / (bqp + b);
-
-                // 计算投注比例
-                double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(2).Sum(x => 1 / (3 * x - 2)) - 1) * (3 * o3 - 2));
-                for (int i = 0; i < pqp.Length; i++)
+                if (table.SpQp.Count > 0)
                 {
-                    if (sqp[i] <= oqp3)
+                    double[] sqp = table.SpQp.Sp;
+                    pqp = new double[sqp.Length];
+
+                    // 计算QP赔付率
+                    IOrderedEnumerable<double> sorted_sqp = sqp.OrderBy(x => x);
+                    double oqp3 = sorted_sqp.Skip(2).First();
+                    double aqp = 3 * (oqp3 - 1) / (3 * (oqp3 - 1) + 1) * sorted_s3.Take(2).Sum(x => 1 / (3 * (x - 1)));
+                    double bqp = sorted_sqp.Skip(2).Sum(x => 1 / (3 * (x - 1) + 1));
+                    double rqp = (aqp + 1) / (bqp + b);
+
+                    // 计算投注比例
+                    double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(2).Sum(x => 1 / (3 * x - 2)) - 1) * (3 * o3 - 2));
+                    for (int i = 0; i < pqp.Length; i++)
                     {
-                        pqp[i] = pqp3 * (oqp3 - 1) / (sqp[i] - 1);
-                    }
-                    else
-                    {
-                        pqp[i] = pqp3 * (3 * oqp3 - 2) / (3 * sqp[i] - 2);
+                        if (sqp[i] <= oqp3)
+                        {
+                            pqp[i] = pqp3 * (oqp3 - 1) / (sqp[i] - 1);
+                        }
+                        else
+                        {
+                            pqp[i] = pqp3 * (3 * oqp3 - 2) / (3 * sqp[i] - 2);
+                        }
                     }
                 }
             }

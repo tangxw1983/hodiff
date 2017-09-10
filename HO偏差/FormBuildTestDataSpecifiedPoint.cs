@@ -118,7 +118,13 @@ LIMIT 18,10
                                                     JArray ja = (JArray)JsonConvert.DeserializeObject((string)dr["raw_info"]);
                                                     foreach (JObject jo in ja)
                                                     {
-                                                        item.Odds.Add(new Hrs(jo["horseNo"].ToString(), (double)jo["win"], (double)jo["plc"]));
+                                                        double win = (double)jo["win"];
+                                                        double plc = (double)jo["plc"];
+                                                        if (win != 0 && plc != 0)
+                                                        {
+                                                            item.Odds.Add(new Hrs(jo["horseNo"].ToString(), win, plc));
+                                                        }
+                                                        
                                                     }
                                                 }
                                                 else

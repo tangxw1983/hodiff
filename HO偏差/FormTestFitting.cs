@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace HO偏差
 {
@@ -35,6 +36,61 @@ namespace HO偏差
 
             double E = Fitting.fit(table, 0.00001);
             MessageBox.Show(E.ToString());
+        }
+
+        private void btnFit_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog dlg = new OpenFileDialog())
+            {
+                dlg.InitialDirectory = Application.StartupPath;
+                dlg.Multiselect = true;
+
+                if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    this.btnFit.Enabled = false;
+
+                    Thread t = new Thread(delegate(object args)
+                    {
+                        string[] filenames = (string[])args;
+                        foreach (string filename in dlg.FileNames)
+                        {
+                            RaceData race = RaceData.Load(filename);
+
+                            foreach (KeyValuePair<long, RaceDataItem> item in race)
+                            {
+                                this.Invoke(new MethodInvoker(delegate
+                                {
+                                    this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > {1} of {2} fitting...\r\n", DateTime.Now, item.Key, filename));
+                                }));
+
+                                item.Value.Odds.ClearSCR();
+                                double E = Fitting.fit(item.Value.Odds, 0.001);
+
+                                this.Invoke(new MethodInvoker(delegate
+                                {
+                                    this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > {1} of {2} E = {3}\r\n", DateTime.Now, item.Key, filename, E));
+                                }));
+
+                                break;
+                            }
+
+                            race.Save(filename + ".fit");
+                            this.Invoke(new MethodInvoker(delegate
+                            {
+                                this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > file {1} finished\r\n", DateTime.Now, filename));
+                            }));
+
+                        }
+
+                        this.Invoke(new MethodInvoker(delegate
+                        {
+                            this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > all finished\r\n", DateTime.Now));
+                            this.btnFit.Enabled = true;
+                        }));
+                    });
+                    t.Start(dlg.FileNames);
+                }
+            }
         }
     }
 }

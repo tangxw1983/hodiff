@@ -54,14 +54,16 @@ namespace common.Math
         {
             if (c == null) throw new ArgumentNullException("c");
             if (c.Length != _m) throw new ArgumentException("c length is not equal to m");
-            Array.Sort(c);
+            int[] cc = new int[_m];
+            Array.Copy(c, cc, _m);
+            Array.Sort(cc);
 
             long offset = 0;
             int pinx = -1;
             for (int i = 0; i < _m; i++)
             {
-                offset += getOffset(c[i], i, pinx);
-                pinx = c[i];
+                offset += getOffset(cc[i], i, pinx);
+                pinx = cc[i];
             }
 
             if (offset > int.MaxValue) throw new Exception("result out of range");

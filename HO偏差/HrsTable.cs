@@ -48,6 +48,18 @@ namespace HO偏差
             }
         }
 
+        public void ClearSCR()
+        {
+            for (int i = 0; i < this.Count; i++)
+            {
+                if (this[i].Win == 0 || this[i].Plc == 0)
+                {
+                    this.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
         public double[] SpWin
         {
             get
