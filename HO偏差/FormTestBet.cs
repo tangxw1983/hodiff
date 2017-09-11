@@ -521,8 +521,8 @@ on duplicate key update fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_pro
                 }
 
                 using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_qn(time_key,cd_id,rc_no,direction,q_type,hs_no,percent,limit,fitting_loss,amt,od,prob)
-values (?time_key,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?limit,?fitting_loss,?amt,?od,?prob)
+insert into sl_invest_qn(time_key,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,fitting_loss,amt,od,prob)
+values (?time_key,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?fitting_loss,?amt,?od,?prob)
 on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lmt=CURRENT_TIMESTAMP()
 ", conn))
                 {
@@ -533,7 +533,7 @@ on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lm
                     cmd.Parameters.Add("?q_type", MySqlDbType.VarChar, 10);
                     cmd.Parameters.Add("?hs_no", MySqlDbType.VarChar, 20);
                     cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
-                    cmd.Parameters.Add("?limit", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?q_limit", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?fitting_loss", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?amt", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?od", MySqlDbType.Decimal);
@@ -548,7 +548,7 @@ on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lm
                         cmd.Parameters["?q_type"].Value = ir.Type;
                         cmd.Parameters["?hs_no"].Value = ir.HorseNo;
                         cmd.Parameters["?percent"].Value = ir.Percent;
-                        cmd.Parameters["?limit"].Value = ir.Limit;
+                        cmd.Parameters["?q_limit"].Value = ir.Limit;
                         cmd.Parameters["?fitting_loss"].Value = ir.FittingLoss;
                         cmd.Parameters["?amt"].Value = ir.Amount;
                         cmd.Parameters["?od"].Value = ir.Odds;
