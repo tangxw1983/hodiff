@@ -558,30 +558,6 @@ on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lm
                     }
                 }
             }
-
-            using (FileStream fs = new FileStream(filename + ".wp.log", FileMode.OpenOrCreate, FileAccess.ReadWrite))
-            {
-                fs.SetLength(0);
-                using (StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
-                {
-                    foreach (InvestRecordWp ir in wp_records)
-                    {
-                        sw.WriteLine(string.Format("{0},{1},{2},,{3},{4},{5},{6},,{7},{8},{9},{10}", ir.Direction, ir.HorseNo, ir.Percent, ir.WinAmount, ir.WinLimit, ir.WinOdds, ir.WinProbility, ir.PlcAmount, ir.PlcLimit, ir.PlcOdds, ir.PlcProbility));
-                    }
-                }
-            }
-
-            using (FileStream fs = new FileStream(filename + ".qn.log", FileMode.OpenOrCreate, FileAccess.ReadWrite))
-            {
-                fs.SetLength(0);
-                using (StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
-                {
-                    foreach (InvestRecordQn ir in qn_records)
-                    {
-                        sw.WriteLine(string.Format("{0},{1},{2},{3},,{4},{5},{6},{7}", ir.Direction, ir.HorseNo, ir.Type, ir.Percent, ir.Amount, ir.Limit, ir.Odds, ir.Probility));
-                    }
-                }
-            }
         }
     }
 }
