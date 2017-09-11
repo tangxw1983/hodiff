@@ -67,8 +67,12 @@ namespace HO偏差
             public double Percent { get; set; }
             public double WinAmount { get; set; }
             public double WinLimit { get; set; }
+            public double WinOdds { get; set; }
+            public double WinProbility { get; set; }
             public double PlcAmount { get; set; }
             public double PlcLimit { get; set; }
+            public double PlcOdds { get; set; }
+            public double PlcProbility { get; set; }
         }
 
         class InvestRecordQn
@@ -79,6 +83,8 @@ namespace HO偏差
             public double Percent { get; set; }
             public double Amount { get; set; }
             public double Limit { get; set; }
+            public double Odds { get; set; }
+            public double Probility { get; set; }
         }
 
         private void handle(string filename)
@@ -159,9 +165,13 @@ namespace HO偏差
                                     HorseNo = h.No,
                                     Percent = w.Percent,
                                     WinAmount = Math.Min(bet_amount, w.WinAmount),   // 这里的Min目的是适用单Win或单Plc，另一个为0的时候
-                                    WinLimit = w.WinLimit / LIMIT_SCALE,
+                                    WinLimit = w.WinLimit,
+                                    WinOdds = h.Win,
+                                    WinProbility = p1[i],
                                     PlcAmount = Math.Min(bet_amount, w.PlcAmount),
-                                    PlcLimit = w.PlcLimit / LIMIT_SCALE
+                                    PlcLimit = w.PlcLimit,
+                                    PlcOdds = h.Plc,
+                                    PlcProbility = p3[i]
                                 };
 
                                 wp_records.Add(ir);
@@ -235,9 +245,13 @@ namespace HO偏差
                                     HorseNo = h.No,
                                     Percent = w.Percent,
                                     WinAmount = Math.Min(eat_amount, w.WinAmount),
-                                    WinLimit = w.WinLimit / LIMIT_SCALE,
+                                    WinLimit = w.WinLimit,
+                                    WinOdds = h.Win,
+                                    WinProbility = p1[i],
                                     PlcAmount = Math.Min(eat_amount, w.PlcAmount),
-                                    PlcLimit = w.PlcLimit / LIMIT_SCALE
+                                    PlcLimit = w.PlcLimit,
+                                    PlcOdds = h.Plc,
+                                    PlcProbility = p3[i]
                                 };
 
                                 wp_records.Add(ir);
@@ -288,7 +302,9 @@ namespace HO偏差
                                     HorseNo = horseNo,
                                     Percent = w.Percent,
                                     Amount = current_amount,
-                                    Limit = w.Limit / LIMIT_SCALE
+                                    Limit = w.Limit,
+                                    Odds = sp,
+                                    Probility = pq_win[i]
                                 };
                                 qn_records.Add(ir);
                                 bet_amount += ir.Amount;
@@ -321,7 +337,9 @@ namespace HO偏差
                                     HorseNo = horseNo,
                                     Percent = w.Percent,
                                     Amount = current_amount,
-                                    Limit = w.Limit / LIMIT_SCALE
+                                    Limit = w.Limit,
+                                    Odds = sp,
+                                    Probility = pq_win[i]
                                 };
                                 qn_records.Add(ir);
                                 eat_amount += ir.Amount;
@@ -359,7 +377,9 @@ namespace HO偏差
                                     HorseNo = horseNo,
                                     Percent = w.Percent,
                                     Amount = current_amount,
-                                    Limit = w.Limit / LIMIT_SCALE
+                                    Limit = w.Limit,
+                                    Odds = sp,
+                                    Probility = pq_plc[i]
                                 };
                                 qn_records.Add(ir);
                                 bet_amount += ir.Amount;
@@ -392,7 +412,9 @@ namespace HO偏差
                                     HorseNo = horseNo,
                                     Percent = w.Percent,
                                     Amount = current_amount,
-                                    Limit = w.Limit / LIMIT_SCALE
+                                    Limit = w.Limit,
+                                    Odds = sp,
+                                    Probility = pq_plc[i]
                                 };
                                 qn_records.Add(ir);
                                 eat_amount += ir.Amount;
@@ -409,7 +431,7 @@ namespace HO偏差
                 {
                     foreach (InvestRecordWp ir in wp_records)
                     {
-                        sw.WriteLine(string.Format("{0},{1},{2},{3},{4},{5},{6}", ir.Direction, ir.HorseNo, ir.Percent, ir.WinAmount, ir.WinLimit, ir.PlcAmount, ir.PlcLimit));
+                        sw.WriteLine(string.Format("{0},{1},{2},,{3},{4},{5},{6},,{7},{8},{9},{10}", ir.Direction, ir.HorseNo, ir.Percent, ir.WinAmount, ir.WinLimit, ir.WinOdds, ir.WinProbility, ir.PlcAmount, ir.PlcLimit, ir.PlcOdds, ir.PlcProbility));
                     }
                 }
             }
@@ -421,7 +443,7 @@ namespace HO偏差
                 {
                     foreach (InvestRecordQn ir in qn_records)
                     {
-                        sw.WriteLine(string.Format("{0},{1},{2},{3},{4},{5}", ir.Direction, ir.HorseNo, ir.Type, ir.Percent, ir.Amount, ir.Limit));
+                        sw.WriteLine(string.Format("{0},{1},{2},{3},,{4},{5},{6},{7}", ir.Direction, ir.HorseNo, ir.Type, ir.Percent, ir.Amount, ir.Limit, ir.Odds, ir.Probility));
                     }
                 }
             }

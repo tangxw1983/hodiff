@@ -36,6 +36,8 @@ namespace HO偏差
         private Comb2Table _sp_q = null;
         private Comb2Table _sp_qp = null;
 
+        public double E { get; set; }
+
         public Hrs this[string no]
         {
             get

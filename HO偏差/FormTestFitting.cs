@@ -65,6 +65,7 @@ namespace HO偏差
 
                                 item.Value.Odds.ClearSCR();
                                 double E = Fitting.fit(item.Value.Odds, 0.001);
+                                item.Value.Odds.E = E;
 
                                 this.Invoke(new MethodInvoker(delegate
                                 {

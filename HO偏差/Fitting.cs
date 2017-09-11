@@ -125,6 +125,119 @@ namespace HO偏差
             }
         }
 
+        private static void calcProbilityForFitting(double[] ee, double[] dd, out double[] p1)
+        {
+            int CNT = ee.Length;
+
+            p1 = new double[CNT];
+
+            for (int i = 0; i < CNT; i++)
+            {
+                common.Math.Calculus.Func f_top_3 = new common.Math.Calculus.Func(delegate(double x)
+                {
+                    double gx = exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
+
+                    double[] V, T;
+
+                    calcFx(CNT, 1, i, x, ee, dd, out V, out T);     
+
+                    return T[0] * gx;
+                });
+
+                p1[i] = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
+            }
+        }
+
+        private static void calcProbilityForFitting(double[] ee, double[] dd, out double[] p1, out double[] pq)
+        {
+            int CNT = ee.Length;
+
+            p1 = new double[CNT];
+
+            common.Math.Combination combq = new common.Math.Combination(CNT, 2);
+            pq = new double[combq.Length];
+
+            for (int i = 0; i < CNT; i++)
+            {
+                common.Math.Calculus.MultiFunc f_top_3 = new common.Math.Calculus.MultiFunc(delegate(double x)
+                {
+                    double gx = exp(-(x - ee[i]) * (x - ee[i]) / (2 * dd[i] * dd[i])) / (SQRT_2_PI * dd[i]);
+
+                    double[] ret = new double[CNT];     // 第一个为WIN的概率，后面CNT-1个是我第二名时第一名的是各匹马的概率
+
+                    double[] V, T;
+
+                    calcFx(CNT, 2, i, x, ee, dd, out V, out T);
+
+                    ret[0] = T[0];
+
+                    // 计算我跑第二时，第一名各马的概率
+                    double tmp = 1;  // 去掉不可能赢之后的概率连乘
+                    int v0count = 0,  // 我赢概率为0的数量，即肯定超过我的数量
+                        v1count = 0;  // 不可能超过我的数量
+                    for (int j = 0; j < CNT - 1; j++)
+                    {
+                        if (V[j] == 0)
+                        {
+                            v0count++;
+                        }
+                        else if (V[j] == 1)
+                        {
+                            v1count++;
+                        }
+                        else
+                        {
+                            tmp *= V[j];
+                        }
+                    }
+                    // 肯定超过我的数量v0count大于1，我的名次肯定低于2，我跑第2的概率为0
+                    // 不可能超过的数量v1count大于CNT-2，我的名次肯定高于2
+                    if (v0count <= 1 && v1count <= CNT - 2)
+                    {
+                        for (int j = 0, j2 = 1; j < CNT - 1; j++, j2++)
+                        {
+                            if (v0count == 1)
+                            {
+                                if (V[j] == 0)
+                                    ret[j2] = tmp;
+                                else
+                                    ret[j2] = 0;
+                            }
+                            else
+                            {
+                                if (V[j] == 1)
+                                {
+                                    ret[j2] = 0;
+                                }
+                                else
+                                {
+                                    ret[j2] /= V[j];
+                                    ret[j2] *= (1 - V[j]);
+                                }
+                            }
+                        }
+                    }
+                });
+
+                common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
+                p1[i] = pv[0];
+
+                int[] c = new int[2];
+                c[0] = i;
+
+                for (int j = 0, j2 = 1; j < CNT - 1; j++, j2++)
+                {
+                    // 只有和我的组合
+                    if (j < i)
+                        c[1] = j;
+                    else
+                        c[1] = j + 1;
+
+                    pq[combq.Index(c)] += pv[j2];
+                }
+            }
+        }
+
         public static void calcProbility(double[] ee, double[] dd, out double[] p1, out double[] p3)
         {
             int CNT = ee.Length;
@@ -431,12 +544,11 @@ namespace HO偏差
         public static double fit(HrsTable table, double epsilon)
         {
             int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= 6) PLC_CNT = 2;
 
             double[] s1 = table.SpWin;
             double[] s3 = table.SpPlc;
-
-            double[] ee = new double[CNT];
-            double[] dd = new double[CNT];
 
             double rr1 = 1 / s1.Sum(x => 1 / x);
 
@@ -449,13 +561,13 @@ namespace HO偏差
 
             // 计算PLC赔付率
             IOrderedEnumerable<double> sorted_s3 = s3.OrderBy(x => x);
-            double o3 = sorted_s3.Skip(2).First();
-            double a = 3 * (o3 - 1) / (3 * (o3 - 1) + 1) * sorted_s3.Take(2).Sum(x => 1 / (3 * (x - 1)));
-            double b = sorted_s3.Skip(2).Sum(x => 1 / (3 * (x - 1) + 1));
+            double o3 = sorted_s3.Skip(PLC_CNT - 1).First();
+            double a = PLC_CNT * (o3 - 1) / (PLC_CNT * (o3 - 1) + 1) * sorted_s3.Take(PLC_CNT - 1).Sum(x => 1 / (PLC_CNT * (x - 1)));
+            double b = sorted_s3.Skip(PLC_CNT - 1).Sum(x => 1 / (PLC_CNT * (x - 1) + 1));
             double rr3 = (a + 1) / (a + b);
 
             // 计算投注比例
-            double po3 = (1 - rr3) / ((sorted_s3.Skip(2).Sum(x => 1 / (3 * x - 2)) - 1) * (3 * o3 - 2));
+            double po3 = (1 - rr3) / ((sorted_s3.Skip(PLC_CNT - 1).Sum(x => 1 / (PLC_CNT * (x - 1) + 1)) - 1) * (PLC_CNT * (o3 - 1) + 1));
             double[] ph3 = new double[CNT];
             for (int i = 0; i < CNT; i++)
             {
@@ -465,7 +577,7 @@ namespace HO偏差
                 }
                 else
                 {
-                    ph3[i] = po3 * (3 * o3 - 2) / (3 * s3[i] - 2);
+                    ph3[i] = po3 * (PLC_CNT * (o3 - 1) + 1) / (PLC_CNT * (s3[i] - 1) + 1);
                 }
             }
 
@@ -495,15 +607,17 @@ namespace HO偏差
                     double[] sqp = table.SpQp.Sp;
                     pqp = new double[sqp.Length];
 
+                    int QP_CNT = (int)(new common.Math.Combination(PLC_CNT, 2)).Length;
+
                     // 计算QP赔付率
                     IOrderedEnumerable<double> sorted_sqp = sqp.OrderBy(x => x);
-                    double oqp3 = sorted_sqp.Skip(2).First();
-                    double aqp = 3 * (oqp3 - 1) / (3 * (oqp3 - 1) + 1) * sorted_s3.Take(2).Sum(x => 1 / (3 * (x - 1)));
-                    double bqp = sorted_sqp.Skip(2).Sum(x => 1 / (3 * (x - 1) + 1));
+                    double oqp3 = sorted_sqp.Skip(QP_CNT - 1).First();
+                    double aqp = QP_CNT * (oqp3 - 1) / (QP_CNT * (oqp3 - 1) + 1) * sorted_s3.Take(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1)));
+                    double bqp = sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1));
                     double rqp = (aqp + 1) / (bqp + b);
 
                     // 计算投注比例
-                    double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(2).Sum(x => 1 / (3 * x - 2)) - 1) * (3 * o3 - 2));
+                    double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1)) - 1) * (QP_CNT * (o3 - 1) + 1));
                     for (int i = 0; i < pqp.Length; i++)
                     {
                         if (sqp[i] <= oqp3)
@@ -512,7 +626,7 @@ namespace HO偏差
                         }
                         else
                         {
-                            pqp[i] = pqp3 * (3 * oqp3 - 2) / (3 * sqp[i] - 2);
+                            pqp[i] = pqp3 * (QP_CNT * (oqp3 - 1) + 1) / (QP_CNT * (sqp[i] - 1) + 1);
                         }
                     }
                 }
@@ -529,24 +643,39 @@ namespace HO偏差
                     break;
                 }
             }
-
             if (trd_inx == -1)
             {
                 throw new Exception("没想到找不到排行第3的项");
             }
 
-            ee[trd_inx] = 0;
-            dd[trd_inx] = 1;
+            double[] ee, dd;
 
-            // 初始化其他项
-            // 目前全部设为期望=0，方差=1
-            // 后面考虑根据s1设置
-            for (int i = 0; i < CNT; i++)
+            if (table.E == 0)
             {
-                if (i == trd_inx) continue;
-                ee[i] = 0;
-                dd[i] = 1;
+                ee = new double[CNT];
+                dd = new double[CNT];
+
+                ee[trd_inx] = 0;
+                dd[trd_inx] = 1;
+
+                // 初始化其他项
+                // 目前全部设为期望=0，方差=1
+                // 后面考虑根据s1设置
+                for (int i = 0; i < CNT; i++)
+                {
+                    if (i == trd_inx) continue;
+                    ee[i] = 0;
+                    dd[i] = 1;
+                }
             }
+            else
+            {
+                // 从已经训练的数据继续训练
+
+                ee = table.Select(x => x.Mean).ToArray();
+                dd = table.Select(x => x.Var).ToArray();
+            }
+            
 
             double lastE = double.MaxValue;
             int reach_count = 0;
