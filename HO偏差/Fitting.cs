@@ -402,6 +402,32 @@ namespace HO偏差
             }
         }
 
+        public static void calcProbility(HrsTable table, out double[] p1, out double[] p3, out double[] pq_win, out double[] pq_plc)
+        {
+            double[] ee = table.Select(x => x.Mean).ToArray();
+            double[] dd = table.Select(x => x.Var).ToArray();
+
+            if ((table.HasSpQ && table.SpQ.Count > 0) || (table.HasSpQp && table.SpQp.Count > 0))
+            {
+                calcProbility(ee, dd, out p1, out p3, out pq_win, out pq_plc);
+
+                if (!table.HasSpQ || table.SpQ.Count == 0)
+                {
+                    pq_win = null;
+                }
+                if (!table.HasSpQp || table.SpQp.Count == 0)
+                {
+                    pq_plc = null;
+                }
+            }
+            else
+            {
+                calcProbility(ee, dd, out p1, out p3);
+                pq_win = null;
+                pq_plc = null;
+            }
+        }
+
         public static double fit(HrsTable table, double epsilon)
         {
             int CNT = table.Count;

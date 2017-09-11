@@ -24,6 +24,29 @@ namespace HO偏差
         public double PlcLimit { get; set; }
     }
 
+    public class WaterWPList : List<WaterWPItem>
+    {
+        public WaterWPList() : base() { }
+        public WaterWPList(IEnumerable<WaterWPItem> collection) : base(collection) { }
+
+        public double GetTotalAmount(WaterWPType type)
+        {
+            switch (type)
+            {
+                case WaterWPType.Win:
+                    return this.Where(x => x.PlcAmount == 0).Select(x => x.WinAmount).Sum();
+                case WaterWPType.Plc:
+                    return this.Where(x => x.WinAmount == 0).Select(x => x.PlcAmount).Sum();
+                case WaterWPType.WinPlc:
+                    return this.Where(x => x.PlcAmount > 0 && x.WinAmount > 0).Select(x => x.WinAmount).Sum();
+                case WaterWPType.None:
+                    return this.Select(x => x.WinAmount + x.PlcAmount).Sum();
+                default:
+                    return 0;
+            }
+        }
+    }
+
     [Serializable()]
     public class WaterWP : List<WaterWPItem>
     {
@@ -47,6 +70,10 @@ namespace HO偏差
             {
                 return _bet ? "BET" : "EAT";
             }
+            set
+            {
+                _bet = (value == "BET");
+            }
         }
 
         public double GetBestWater(WaterWPType type)
@@ -60,6 +87,24 @@ namespace HO偏差
                 return this.Where(x => ((type & WaterWPType.Win) != WaterWPType.None ? x.WinAmount > 0 : true) && ((type & WaterWPType.Plc) != WaterWPType.None ? x.PlcAmount > 0 : true)).Min(x => x.Percent);
             }
         }
+
+        public WaterWPList GetValuableWater(double minR, double oddsWin, double pWin, double oddsPlc, double pPlc)
+        {
+            if (_bet)
+            {
+                return new WaterWPList(this.Where(x =>
+                    (x.WinAmount > 0 ? (1 + x.Percent / 100 / Math.Min(oddsWin, x.WinLimit / 10)) * (1 - pWin) > minR : true) &&
+                    (x.PlcAmount > 0 ? (1 + x.Percent / 100 / Math.Min(oddsPlc, x.PlcLimit / 10)) * (1 - pPlc) > minR : true)
+                ));
+            }
+            else
+            {
+                return new WaterWPList(this.Where(x =>
+                    (x.WinAmount > 0 ? (Math.Min(oddsWin, x.WinLimit / 10) * 100 / x.Percent) * pWin > minR : true) &&
+                    (x.PlcAmount > 0 ? (Math.Min(oddsPlc, x.PlcLimit / 10) * 100 / x.Percent) * pPlc > minR : true)
+                ));
+            }
+        }
     }
 
     [Serializable()]
@@ -68,6 +113,12 @@ namespace HO偏差
         public double Percent { get; set; }
         public double Amount { get; set; }
         public double Limit { get; set; }
+    }
+
+    class WaterQnList : List<WaterQnItem>
+    {
+        public WaterQnList() { }
+        public WaterQnList(IEnumerable<WaterQnItem> collection) : base(collection) { }
     }
 
     [Serializable()]
@@ -93,6 +144,10 @@ namespace HO偏差
             {
                 return _bet ? "BET" : "EAT";
             }
+            set
+            {
+                _bet = (value == "BET");
+            }
         }
 
         public double GetBestWater()
@@ -104,6 +159,18 @@ namespace HO偏差
             else
             {
                 return this.Min(x => x.Percent);
+            }
+        }
+
+        public WaterQnList GetValuableWater(double minR, double odds, double p)
+        {
+            if (_bet)
+            {
+                return new WaterQnList(this.Where(x => (1 + x.Percent / 100 / Math.Min(odds, x.Limit / 10)) * (1 - p) > minR) );
+            }
+            else
+            {
+                return new WaterQnList(this.Where(x => (Math.Min(odds, x.Limit / 10) * 100 / x.Percent) * p > minR));
             }
         }
     }
@@ -129,6 +196,31 @@ namespace HO偏差
         private Dictionary<string, WaterQn> _qp_bet_waters;
         private Dictionary<string, WaterQn> _qp_eat_waters;
 
+        public void FixWaterType()
+        {
+            if (_wp_eat_waters != null)
+            {
+                foreach (KeyValuePair<string, WaterWP> kvp in _wp_eat_waters)
+                {
+                    kvp.Value.Type = "EAT";
+                }
+            }
+            if (_qn_eat_waters != null)
+            {
+                foreach (KeyValuePair<string, WaterQn> kvp in _qn_eat_waters)
+                {
+                    kvp.Value.Type = "EAT";
+                }
+            }
+            if (_qn_eat_waters != null)
+            {
+                foreach (KeyValuePair<string, WaterQn> kvp in _qp_eat_waters)
+                {
+                    kvp.Value.Type = "EAT";
+                }
+            }
+        }
+
         public WaterWP GetWpBetWater(string hrsNo)
         {
             lock(_wp_bet_waters)
@@ -148,7 +240,7 @@ namespace HO偏差
             {
                 if (!_wp_eat_waters.ContainsKey(hrsNo))
                 {
-                    _wp_eat_waters[hrsNo] = new WaterWP("BET");
+                    _wp_eat_waters[hrsNo] = new WaterWP("EAT");
                 }
             }
 
@@ -174,7 +266,7 @@ namespace HO偏差
             {
                 if (!_qn_eat_waters.ContainsKey(hrsNo))
                 {
-                    _qn_eat_waters[hrsNo] = new WaterQn("BET");
+                    _qn_eat_waters[hrsNo] = new WaterQn("EAT");
                 }
             }
 
@@ -200,7 +292,7 @@ namespace HO偏差
             {
                 if (!_qp_eat_waters.ContainsKey(hrsNo))
                 {
-                    _qp_eat_waters[hrsNo] = new WaterQn("BET");
+                    _qp_eat_waters[hrsNo] = new WaterQn("EAT");
                 }
             }
 

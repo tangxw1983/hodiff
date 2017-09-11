@@ -82,6 +82,18 @@
     <Compile Include="FormBuildTestDataSpecifiedPoint.Designer.cs">
       <DependentUpon>FormBuildTestDataSpecifiedPoint.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormFixWaterType.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormFixWaterType.Designer.cs">
+      <DependentUpon>FormFixWaterType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormTestBet.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTestBet.Designer.cs">
+      <DependentUpon>FormTestBet.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormTestFitting.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -101,6 +113,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormBuildTestDataSpecifiedPoint.resx">
       <DependentUpon>FormBuildTestDataSpecifiedPoint.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormFixWaterType.resx">
+      <DependentUpon>FormFixWaterType.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTestBet.resx">
+      <DependentUpon>FormTestBet.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormTestFitting.resx">
       <DependentUpon>FormTestFitting.cs</DependentUpon>
