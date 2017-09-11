@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.Threading;
+using MySql.Data.MySqlClient;
 
 namespace HO偏差
 {
@@ -62,6 +63,9 @@ namespace HO偏差
 
         class InvestRecordWp
         {
+            public long TimeKey { get; set; }
+            public ulong CardID { get; set; }
+            public int RaceNo { get; set; }
             public string Direction { get; set; }
             public string HorseNo { get; set; }
             public double Percent { get; set; }
@@ -73,10 +77,14 @@ namespace HO偏差
             public double PlcLimit { get; set; }
             public double PlcOdds { get; set; }
             public double PlcProbility { get; set; }
+            public double FittingLoss { get; set; }
         }
 
         class InvestRecordQn
         {
+            public long TimeKey { get; set; }
+            public ulong CardID { get; set; }
+            public int RaceNo { get; set; }
             public string Direction { get; set; }
             public string Type { get; set; }
             public string HorseNo { get; set; }
@@ -85,11 +93,13 @@ namespace HO偏差
             public double Limit { get; set; }
             public double Odds { get; set; }
             public double Probility { get; set; }
+            public double FittingLoss { get; set; }
         }
 
         private void handle(string filename)
         {
             RaceData race = RaceData.Load(filename);
+            long tp = race.First().Key;
             RaceDataItem item = race.First().Value;
             double[] p1, p3, pq_win, pq_plc;
             Fitting.calcProbility(item.Odds, out p1, out p3, out pq_win, out pq_plc);
@@ -161,18 +171,29 @@ namespace HO偏差
                             {
                                 InvestRecordWp ir = new InvestRecordWp()
                                 {
+                                    TimeKey = tp,
+                                    CardID = race.CardID,
+                                    RaceNo = race.RaceNo,
                                     Direction = "BET",
                                     HorseNo = h.No,
                                     Percent = w.Percent,
-                                    WinAmount = Math.Min(bet_amount, w.WinAmount),   // 这里的Min目的是适用单Win或单Plc，另一个为0的时候
                                     WinLimit = w.WinLimit,
-                                    WinOdds = h.Win,
-                                    WinProbility = p1[i],
-                                    PlcAmount = Math.Min(bet_amount, w.PlcAmount),
                                     PlcLimit = w.PlcLimit,
-                                    PlcOdds = h.Plc,
-                                    PlcProbility = p3[i]
+                                    FittingLoss = item.Odds.E
                                 };
+
+                                if (w.WinLimit > 0)
+                                {
+                                    ir.WinAmount = bet_amount;
+                                    ir.WinOdds = h.Win;
+                                    ir.WinProbility = p1[i];
+                                }
+                                if (w.PlcLimit > 0)
+                                {
+                                    ir.PlcAmount = bet_amount;
+                                    ir.PlcOdds = h.Plc;
+                                    ir.PlcProbility = p3[i];
+                                }
 
                                 wp_records.Add(ir);
 
@@ -241,18 +262,29 @@ namespace HO偏差
                             {
                                 InvestRecordWp ir = new InvestRecordWp()
                                 {
+                                    TimeKey = tp,
+                                    CardID = race.CardID,
+                                    RaceNo = race.RaceNo,
                                     Direction = "EAT",
                                     HorseNo = h.No,
                                     Percent = w.Percent,
-                                    WinAmount = Math.Min(eat_amount, w.WinAmount),
                                     WinLimit = w.WinLimit,
-                                    WinOdds = h.Win,
-                                    WinProbility = p1[i],
-                                    PlcAmount = Math.Min(eat_amount, w.PlcAmount),
                                     PlcLimit = w.PlcLimit,
-                                    PlcOdds = h.Plc,
-                                    PlcProbility = p3[i]
+                                    FittingLoss = item.Odds.E
                                 };
+
+                                if (w.WinLimit > 0)
+                                {
+                                    ir.WinAmount = eat_amount;
+                                    ir.WinOdds = h.Win;
+                                    ir.WinProbility = p1[i];
+                                }
+                                if (w.PlcLimit > 0)
+                                {
+                                    ir.PlcAmount = eat_amount;
+                                    ir.PlcOdds = h.Plc;
+                                    ir.PlcProbility = p3[i];
+                                }
 
                                 wp_records.Add(ir);
 
@@ -297,6 +329,9 @@ namespace HO偏差
                             {
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
+                                    TimeKey = tp,
+                                    CardID = race.CardID,
+                                    RaceNo = race.RaceNo,
                                     Direction = "BET",
                                     Type = "Q",
                                     HorseNo = horseNo,
@@ -304,7 +339,8 @@ namespace HO偏差
                                     Amount = current_amount,
                                     Limit = w.Limit,
                                     Odds = sp,
-                                    Probility = pq_win[i]
+                                    Probility = pq_win[i],
+                                    FittingLoss = item.Odds.E
                                 };
                                 qn_records.Add(ir);
                                 bet_amount += ir.Amount;
@@ -332,6 +368,9 @@ namespace HO偏差
                             {
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
+                                    TimeKey = tp,
+                                    CardID = race.CardID,
+                                    RaceNo = race.RaceNo,
                                     Direction = "EAT",
                                     Type = "Q",
                                     HorseNo = horseNo,
@@ -339,7 +378,8 @@ namespace HO偏差
                                     Amount = current_amount,
                                     Limit = w.Limit,
                                     Odds = sp,
-                                    Probility = pq_win[i]
+                                    Probility = pq_win[i],
+                                    FittingLoss = item.Odds.E
                                 };
                                 qn_records.Add(ir);
                                 eat_amount += ir.Amount;
@@ -372,6 +412,9 @@ namespace HO偏差
                             {
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
+                                    TimeKey = tp,
+                                    CardID = race.CardID,
+                                    RaceNo = race.RaceNo,
                                     Direction = "BET",
                                     Type = "QP",
                                     HorseNo = horseNo,
@@ -379,7 +422,8 @@ namespace HO偏差
                                     Amount = current_amount,
                                     Limit = w.Limit,
                                     Odds = sp,
-                                    Probility = pq_plc[i]
+                                    Probility = pq_plc[i],
+                                    FittingLoss = item.Odds.E
                                 };
                                 qn_records.Add(ir);
                                 bet_amount += ir.Amount;
@@ -407,6 +451,9 @@ namespace HO偏差
                             {
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
+                                    TimeKey = tp,
+                                    CardID = race.CardID,
+                                    RaceNo = race.RaceNo,
                                     Direction = "EAT",
                                     Type = "QP",
                                     HorseNo = horseNo,
@@ -414,12 +461,100 @@ namespace HO偏差
                                     Amount = current_amount,
                                     Limit = w.Limit,
                                     Odds = sp,
-                                    Probility = pq_plc[i]
+                                    Probility = pq_plc[i],
+                                    FittingLoss = item.Odds.E
                                 };
                                 qn_records.Add(ir);
                                 eat_amount += ir.Amount;
                             }
                         }
+                    }
+                }
+            }
+
+            using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
+            {
+                conn.Open();
+
+                using (MySqlCommand cmd = new MySqlCommand(@"
+insert into sl_invest_wp (time_key,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob)
+values (?time_key,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob)
+on duplicate key update fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_prob=?w_prob,p_amt=?p_amt,p_od=?p_od,p_prob=?p_prob,lmt=CURRENT_TIMESTAMP()
+", conn))
+                {
+                    cmd.Parameters.Add("?time_key", MySqlDbType.Int64);
+                    cmd.Parameters.Add("?cd_id", MySqlDbType.UInt64);
+                    cmd.Parameters.Add("?rc_no", MySqlDbType.Int32);
+                    cmd.Parameters.Add("?direction", MySqlDbType.VarChar, 10);
+                    cmd.Parameters.Add("?hs_no", MySqlDbType.Int32);
+                    cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?w_limit", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?p_limit", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?fitting_loss", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?w_amt", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?w_od", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?w_prob", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?p_amt", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?p_od", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?p_prob", MySqlDbType.Decimal);
+
+                    foreach (InvestRecordWp ir in wp_records)
+                    {
+                        cmd.Parameters["?time_key"].Value = ir.TimeKey;
+                        cmd.Parameters["?cd_id"].Value = ir.CardID;
+                        cmd.Parameters["?rc_no"].Value = ir.RaceNo;
+                        cmd.Parameters["?direction"].Value = ir.Direction;
+                        cmd.Parameters["?hs_no"].Value = int.Parse(ir.HorseNo);
+                        cmd.Parameters["?percent"].Value = ir.Percent;
+                        cmd.Parameters["?w_limit"].Value = ir.WinLimit;
+                        cmd.Parameters["?p_limit"].Value = ir.PlcLimit;
+                        cmd.Parameters["?fitting_loss"].Value = ir.FittingLoss;
+                        cmd.Parameters["?w_amt"].Value = ir.WinAmount;
+                        cmd.Parameters["?w_od"].Value = ir.WinOdds;
+                        cmd.Parameters["?w_prob"].Value = ir.WinProbility;
+                        cmd.Parameters["?p_amt"].Value = ir.PlcAmount;
+                        cmd.Parameters["?p_od"].Value = ir.PlcOdds;
+                        cmd.Parameters["?p_prob"].Value = ir.PlcProbility;
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                using (MySqlCommand cmd = new MySqlCommand(@"
+insert into sl_invest_qn(time_key,cd_id,rc_no,direction,q_type,hs_no,percent,limit,fitting_loss,amt,od,prob)
+values (?time_key,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?limit,?fitting_loss,?amt,?od,?prob)
+on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lmt=CURRENT_TIMESTAMP()
+", conn))
+                {
+                    cmd.Parameters.Add("?time_key", MySqlDbType.Int64);
+                    cmd.Parameters.Add("?cd_id", MySqlDbType.UInt64);
+                    cmd.Parameters.Add("?rc_no", MySqlDbType.Int32);
+                    cmd.Parameters.Add("?direction", MySqlDbType.VarChar, 10);
+                    cmd.Parameters.Add("?q_type", MySqlDbType.VarChar, 10);
+                    cmd.Parameters.Add("?hs_no", MySqlDbType.VarChar, 20);
+                    cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?limit", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?fitting_loss", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?amt", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?od", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?prob", MySqlDbType.Decimal);
+
+                    foreach (InvestRecordQn ir in qn_records)
+                    {
+                        cmd.Parameters["?time_key"].Value = ir.TimeKey;
+                        cmd.Parameters["?cd_id"].Value = ir.CardID;
+                        cmd.Parameters["?rc_no"].Value = ir.RaceNo;
+                        cmd.Parameters["?direction"].Value = ir.Direction;
+                        cmd.Parameters["?q_type"].Value = ir.Type;
+                        cmd.Parameters["?hs_no"].Value = ir.HorseNo;
+                        cmd.Parameters["?percent"].Value = ir.Percent;
+                        cmd.Parameters["?limit"].Value = ir.Limit;
+                        cmd.Parameters["?fitting_loss"].Value = ir.FittingLoss;
+                        cmd.Parameters["?amt"].Value = ir.Amount;
+                        cmd.Parameters["?od"].Value = ir.Odds;
+                        cmd.Parameters["?prob"].Value = ir.Probility;
+
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
