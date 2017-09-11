@@ -211,12 +211,13 @@ namespace HO偏差
                                 }
                                 else
                                 {
-                                    ret[j2] /= V[j];
-                                    ret[j2] *= (1 - V[j]);
+                                    ret[j2] = tmp / V[j] * (1 - V[j]);
                                 }
                             }
                         }
                     }
+
+                    return new common.Math.vector(ret) * gx;
                 });
 
                 common.Math.vector pv = common.Math.Calculus.integrate(f_top_3, ee[i] - dd[i] * 7, ee[i] + dd[i] * 7, Math.Pow(10, -PRECISION), 5);
@@ -392,8 +393,7 @@ namespace HO偏差
                                 }
                                 else
                                 {
-                                    ret[j2] /= V[j];
-                                    ret[j2] *= (1 - V[j]);
+                                    ret[j2] = tmp / V[j] * (1 - V[j]);
                                 }
                             }
                         }
@@ -681,23 +681,21 @@ namespace HO偏差
             int reach_count = 0;
             for (int t = 0; ; t++)
             {
-                double[] p1, p3, pq1 = null, pq3 = null;
-                if (pqw != null || pqp != null)
-                    calcProbility(ee, dd, out p1, out p3, out pq1, out pq3);
+                double[] p1, pq1 = null;
+                if (pqw != null)
+                    calcProbilityForFitting(ee, dd, out p1, out pq1);
                 else
-                    calcProbility(ee, dd, out p1, out p3);
+                    calcProbilityForFitting(ee, dd, out p1);
                 double E = 0;
 
                 // 交叉熵损失以及交叉熵损失对与各个概率的梯度
-                double[] grad_p1 = new double[CNT], grad_p3 = new double[CNT];
+                double[] grad_p1 = new double[CNT];
                 for (int i = 0; i < CNT; i++)
                 {
                     E += -(ph1[i] * Math.Log(p1[i]) + (1 - ph1[i]) * Math.Log(1 - p1[i]));
-                    E += -(ph3[i] * Math.Log(p3[i]) + (1 - ph3[i]) * Math.Log(1 - p3[i]));
                     grad_p1[i] = -(ph1[i] / p1[i] - (1 - ph1[i]) / (1 - p1[i]));
-                    grad_p3[i] = -(ph3[i] / p3[i] - (1 - ph3[i]) / (1 - p3[i]));
                 }
-                double[] grad_pq1 = null, grad_pq3 = null;
+                double[] grad_pq1 = null;
                 if (pqw != null)
                 {
                     grad_pq1 = new double[pqw.Length];
@@ -707,35 +705,24 @@ namespace HO偏差
                         grad_pq1[i] = -(pqw[i] / pq1[i] - (1 - pqw[i]) / (1 - pq1[i]));
                     }
                 }
-                if (pqp != null)
-                {
-                    grad_pq3 = new double[pqp.Length];
-                    for (int i = 0; i < pqp.Length; i++)
-                    {
-                        E += -(pqp[i] * Math.Log(pq3[i]) + (1 - pqp[i]) * Math.Log(1 - pq3[i]));
-                        grad_pq1[i] = -(pqp[i] / pq3[i] - (1 - pqp[i]) / (1 - pq3[i]));
-                    }
-                }
 
                 // 求对各个参数的梯度
                 double[] d_rr_ee = new double[CNT];
                 double[] d_rr_dd = new double[CNT];
                 for (int i = 0; i < CNT; i++)
                 {
-                    double[] tp1, tp3, tpq1 = null, tpq3 = null;
+                    double[] tp1, tpq1 = null;
 
                     ee[i] += EE_D_INC;
-                    if (pqw != null || pqp != null)
-                        calcProbility(ee, dd, out tp1, out tp3, out tpq1, out tpq3);
+                    if (pqw != null)
+                        calcProbilityForFitting(ee, dd, out tp1, out tpq1);
                     else
-                        calcProbility(ee, dd, out tp1, out tp3);
+                        calcProbilityForFitting(ee, dd, out tp1);
 
                     for (int j = 0; j < CNT; j++)
                     {
                         // 第j匹马的WIN概率对第i匹马的均值的梯度 = (tp1[j] - p1[j]) / EE_D_INC
                         d_rr_ee[i] += (tp1[j] - p1[j]) / EE_D_INC * grad_p1[j];
-                        // 第j匹马的PLC概率对第i匹马的均值的梯度 = (tp3[j] - p3[j]) / EE_D_INC
-                        d_rr_ee[i] += (tp3[j] - p3[j]) / EE_D_INC * grad_p3[j];
                     }
                     if (pqw != null)
                     {
@@ -744,39 +731,23 @@ namespace HO偏差
                             d_rr_ee[i] += (tpq1[j] - pq1[j]) / EE_D_INC * grad_pq1[j];
                         }
                     }
-                    if (pqp != null)
-                    {
-                        for (int j = 0; j < pqp.Length; j++)
-                        {
-                            d_rr_ee[i] += (tpq3[j] - pq3[j]) / EE_D_INC * grad_pq3[j];
-                        }
-                    }
                     ee[i] -= EE_D_INC;
 
                     dd[i] += DD_D_INC;
-                    if (pqw != null || pqp != null)
-                        calcProbility(ee, dd, out tp1, out tp3, out tpq1, out tpq3);
+                    if (pqw != null)
+                        calcProbilityForFitting(ee, dd, out tp1, out tpq1);
                     else
-                        calcProbility(ee, dd, out tp1, out tp3);
+                        calcProbilityForFitting(ee, dd, out tp1);
                     for (int j = 0; j < CNT; j++)
                     {
                         // 第j匹马的WIN概率对第i匹马的方差的梯度 = (tp1[j] - p1[j]) / DD_D_INC
                         d_rr_dd[i] += (tp1[j] - p1[j]) / DD_D_INC * grad_p1[j];
-                        // 第j匹马的PLC概率对第i匹马的方差的梯度 = (tp3[j] - p3[j]) / DD_D_INC
-                        d_rr_dd[i] += (tp3[j] - p3[j]) / DD_D_INC * grad_p3[j];
                     }
                     if (pqw != null)
                     {
                         for (int j = 0; j < pqw.Length; j++)
                         {
                             d_rr_dd[i] += (tpq1[j] - pq1[j]) / DD_D_INC * grad_pq1[j];
-                        }
-                    }
-                    if (pqp != null)
-                    {
-                        for (int j = 0; j < pqp.Length; j++)
-                        {
-                            d_rr_dd[i] += (tpq3[j] - pq3[j]) / DD_D_INC * grad_pq3[j];
                         }
                     }
                     dd[i] -= DD_D_INC;
