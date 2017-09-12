@@ -692,8 +692,8 @@ namespace HO偏差
                 double[] grad_p1 = new double[CNT];
                 for (int i = 0; i < CNT; i++)
                 {
-                    E += -(ph1[i] * Math.Log(p1[i]) + (1 - ph1[i]) * Math.Log(1 - p1[i]));
-                    grad_p1[i] = -(ph1[i] / p1[i] - (1 - ph1[i]) / (1 - p1[i]));
+                    E += -(ph1[i] * Math.Log(p1[i]));
+                    grad_p1[i] = -(ph1[i] / p1[i]);
                 }
                 double[] grad_pq1 = null;
                 if (pqw != null)
@@ -701,8 +701,8 @@ namespace HO偏差
                     grad_pq1 = new double[pqw.Length];
                     for (int i = 0; i < pqw.Length; i++)
                     {
-                        E += -(pqw[i] * Math.Log(pq1[i]) + (1 - pqw[i]) * Math.Log(1 - pq1[i]));
-                        grad_pq1[i] = -(pqw[i] / pq1[i] - (1 - pqw[i]) / (1 - pq1[i]));
+                        E += -(pqw[i] * Math.Log(pq1[i]));
+                        grad_pq1[i] = -(pqw[i] / pq1[i]);
                     }
                 }
 
