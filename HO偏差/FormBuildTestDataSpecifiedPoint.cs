@@ -34,6 +34,7 @@ namespace HO偏差
                     this.button1.Enabled = true;
                 }));
             });
+            t.IsBackground = true;
             t.Start();
         }
 
@@ -42,6 +43,78 @@ namespace HO偏差
         private long ToUnixTime(DateTime time)
         {
             return (long)time.Subtract(UNIXTIME_BASE).TotalMilliseconds;
+        }
+
+        private MySqlDataReader TryGetReader(MySqlCommand cmd)
+        {
+            DateTime st = DateTime.Now;
+            Exception lastEx = null;
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    if (cmd.Connection.State == ConnectionState.Closed) cmd.Connection.Open();
+                    MySqlDataReader dr = cmd.ExecuteReader();
+
+                    using (System.IO.FileStream fs = new System.IO.FileStream("db.time.log", System.IO.FileMode.Append))
+                    {
+                        using (System.IO.StreamWriter sw = new System.IO.StreamWriter(fs))
+                        {
+                            double ts = DateTime.Now.Subtract(st).TotalMilliseconds;
+
+                            if (ts > 5000)
+                            {
+                                StringBuilder sb = new StringBuilder();
+                                foreach (MySqlParameter p in cmd.Parameters)
+                                {
+                                    sb.Append(string.Format("{0}:{1}\r\n", p.ParameterName, p.Value));
+                                }
+
+                                sw.WriteLine("{0:yyyy-MM-dd HH:mm:ss} > consume time:{1,6:0}ms, failed times:{2}\r\nsql:\r\n{3}\r\nparams:\r\n{4}", DateTime.Now, ts, i, cmd.CommandText, sb.ToString());
+                            }
+                            else
+                            {
+                                sw.WriteLine("{0:yyyy-MM-dd HH:mm:ss} > consume time:{1,6:0}ms", DateTime.Now, ts);
+                            }
+                        }
+                    }
+
+                    return dr;
+                }
+                catch (Exception ex)
+                {
+                    lastEx = ex;
+                }
+
+                if (i < 9)
+                {
+                    Thread.Sleep(10000);
+                }
+            }
+            throw new Exception("Try get reader failed 10 times", lastEx);
+        }
+
+        private bool TryRead(MySqlDataReader dr)
+        {
+            Exception lastEx = null;
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    return dr.Read();
+                }
+                catch (Exception ex)
+                {
+                    lastEx = ex;
+                }
+
+                if (i<9)
+                {
+                    Thread.Sleep(10000);
+                }
+            }
+
+            throw new Exception("Try read data failed 10 times", lastEx);
         }
 
         private void handle()
@@ -55,7 +128,7 @@ SELECT a.*, b.`id` card_id FROM ct_race a
 INNER JOIN ct_card b ON b.`tournament_id` = a.`tournament_id` AND b.`tote_type` = 'HK'
 WHERE a.time_text IS NOT NULL
 AND a.race_loc = 3 
-LIMIT 18,10
+LIMIT 28,8
 ", conn))
                 {
                     using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
@@ -103,15 +176,16 @@ LIMIT 18,10
                                     {
                                         using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_wp_tote where raw_info is not null and rc_id = ?rc_id and cd_id = ?cd_id and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                         {
+                                            cmd2.CommandTimeout = 120000;
                                             cmd2.Parameters.AddWithValue("?rc_id", row["id"]);
                                             cmd2.Parameters.AddWithValue("?cd_id", row["card_id"]);
                                             cmd2.Parameters.AddWithValue("?tb", tp - 150 * 1000);
                                             cmd2.Parameters.AddWithValue("?te", tp + 150 * 1000);
                                             cmd2.Parameters.AddWithValue("?tp", tp);
 
-                                            using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                            using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                             {
-                                                if (dr.Read())
+                                                if (this.TryRead(dr))
                                                 {
                                                     RaceDataItem item = race[tp];
 
@@ -137,15 +211,16 @@ LIMIT 18,10
 
                                         using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_qn_tote where raw_info is not null and rc_id = ?rc_id and cd_id = ?cd_id and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                         {
+                                            cmd2.CommandTimeout = 120000;
                                             cmd2.Parameters.AddWithValue("?rc_id", row["id"]);
                                             cmd2.Parameters.AddWithValue("?cd_id", row["card_id"]);
                                             cmd2.Parameters.AddWithValue("?tb", tp - 150 * 1000);
                                             cmd2.Parameters.AddWithValue("?te", tp + 150 * 1000);
                                             cmd2.Parameters.AddWithValue("?tp", tp);
 
-                                            using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                            using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                             {
-                                                if (dr.Read())
+                                                if (this.TryRead(dr))
                                                 {
                                                     RaceDataItem item = race[tp];
 
@@ -181,6 +256,7 @@ LIMIT 18,10
 
                                     using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_wp_discount where raw_info is not null and cd_id = ?cd_id and direction = ?d and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                     {
+                                        cmd2.CommandTimeout = 120000;
                                         cmd2.Parameters.AddWithValue("?cd_id", cardId);
                                         cmd2.Parameters.AddWithValue("?tb", tp - 150 * 1000);
                                         cmd2.Parameters.AddWithValue("?te", tp + 150 * 1000);
@@ -188,9 +264,9 @@ LIMIT 18,10
                                         MySqlParameter pD = cmd2.Parameters.Add("?d", MySqlDbType.Byte);
 
                                         pD.Value = 0;
-                                        using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                        using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                         {
-                                            if (dr.Read())
+                                            if (this.TryRead(dr))
                                             {
                                                 this.parseWpDiscount((string)dr["raw_info"], items, dr["direction"].ToString());
                                             }
@@ -205,9 +281,9 @@ LIMIT 18,10
                                         }
 
                                         pD.Value = 1;
-                                        using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                        using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                         {
-                                            if (dr.Read())
+                                            if (this.TryRead(dr))
                                             {
                                                 this.parseWpDiscount((string)dr["raw_info"], items, dr["direction"].ToString());
                                             }
@@ -224,6 +300,7 @@ LIMIT 18,10
 
                                     using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_qn_discount where raw_info is not null and cd_id = ?cd_id and direction = ?d and `type` = ?type and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                     {
+                                        cmd2.CommandTimeout = 120000;
                                         cmd2.Parameters.AddWithValue("?cd_id", cardId);
                                         cmd2.Parameters.AddWithValue("?tb", tp - 150 * 1000);
                                         cmd2.Parameters.AddWithValue("?te", tp + 150 * 1000);
@@ -233,9 +310,9 @@ LIMIT 18,10
 
                                         pD.Value = 0;
                                         pT.Value = "Q";
-                                        using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                        using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                         {
-                                            if (dr.Read())
+                                            if (this.TryRead(dr))
                                             {
                                                 this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
                                             }
@@ -251,9 +328,9 @@ LIMIT 18,10
 
                                         pD.Value = 1;
                                         pT.Value = "Q";
-                                        using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                        using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                         {
-                                            if (dr.Read())
+                                            if (this.TryRead(dr))
                                             {
                                                 this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
                                             }
@@ -269,9 +346,9 @@ LIMIT 18,10
 
                                         pD.Value = 0;
                                         pT.Value = "QP";
-                                        using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                        using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                         {
-                                            if (dr.Read())
+                                            if (this.TryRead(dr))
                                             {
                                                 this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
                                             }
@@ -287,9 +364,9 @@ LIMIT 18,10
 
                                         pD.Value = 1;
                                         pT.Value = "QP";
-                                        using (MySqlDataReader dr = cmd2.ExecuteReader())
+                                        using (MySqlDataReader dr = this.TryGetReader(cmd2))
                                         {
-                                            if (dr.Read())
+                                            if (this.TryRead(dr))
                                             {
                                                 this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
                                             }
@@ -304,13 +381,15 @@ LIMIT 18,10
                                         }
                                     }
                                 }
+
+                                foreach (RaceData race in data.Where(x => x.CardID == cardId && x.Count > 0))
+                                {
+                                    race.Save(string.Format("sp-{0:yyyy-MM-dd}-{1}-{2}.dat", race.StartTime, race.CardID, race.RaceNo));
+                                }
                             }
                             #endregion
 
-                            foreach (RaceData race in data.Where(x => x.Count > 0))
-                            {
-                                race.Save(string.Format("sp-{0:yyyy-MM-dd}-{1}-{2}.dat", race.StartTime, race.CardID, race.RaceNo));
-                            }
+                            
                         }
                     }
                 }
