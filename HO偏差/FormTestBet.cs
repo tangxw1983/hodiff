@@ -477,9 +477,9 @@ namespace HO偏差
                 conn.Open();
 
                 using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_wp (time_key,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob)
-values (?time_key,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob)
-on duplicate key update fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_prob=?w_prob,p_amt=?p_amt,p_od=?p_od,p_prob=?p_prob,lmt=CURRENT_TIMESTAMP()
+insert into sl_invest_wp (time_key,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,rc_time,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob)
+values (?time_key,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?rc_time,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob)
+on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_prob=?w_prob,p_amt=?p_amt,p_od=?p_od,p_prob=?p_prob,lmt=CURRENT_TIMESTAMP()
 ", conn))
                 {
                     cmd.Parameters.Add("?time_key", MySqlDbType.Int64);
@@ -490,6 +490,7 @@ on duplicate key update fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_pro
                     cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?w_limit", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?p_limit", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?rc_time", MySqlDbType.DateTime);
                     cmd.Parameters.Add("?fitting_loss", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?w_amt", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?w_od", MySqlDbType.Decimal);
@@ -508,6 +509,7 @@ on duplicate key update fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_pro
                         cmd.Parameters["?percent"].Value = ir.Percent;
                         cmd.Parameters["?w_limit"].Value = ir.WinLimit;
                         cmd.Parameters["?p_limit"].Value = ir.PlcLimit;
+                        cmd.Parameters["?rc_time"].Value = race.StartTime;
                         cmd.Parameters["?fitting_loss"].Value = ir.FittingLoss;
                         cmd.Parameters["?w_amt"].Value = ir.WinAmount;
                         cmd.Parameters["?w_od"].Value = ir.WinOdds;
@@ -521,9 +523,9 @@ on duplicate key update fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_pro
                 }
 
                 using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_qn(time_key,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,fitting_loss,amt,od,prob)
-values (?time_key,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?fitting_loss,?amt,?od,?prob)
-on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lmt=CURRENT_TIMESTAMP()
+insert into sl_invest_qn(time_key,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,rc_time,fitting_loss,amt,od,prob)
+values (?time_key,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?rc_time,?fitting_loss,?amt,?od,?prob)
+on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lmt=CURRENT_TIMESTAMP()
 ", conn))
                 {
                     cmd.Parameters.Add("?time_key", MySqlDbType.Int64);
@@ -534,6 +536,7 @@ on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lm
                     cmd.Parameters.Add("?hs_no", MySqlDbType.VarChar, 20);
                     cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?q_limit", MySqlDbType.Decimal);
+                    cmd.Parameters.Add("?rc_time", MySqlDbType.DateTime);
                     cmd.Parameters.Add("?fitting_loss", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?amt", MySqlDbType.Decimal);
                     cmd.Parameters.Add("?od", MySqlDbType.Decimal);
@@ -549,6 +552,7 @@ on duplicate key update fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lm
                         cmd.Parameters["?hs_no"].Value = ir.HorseNo;
                         cmd.Parameters["?percent"].Value = ir.Percent;
                         cmd.Parameters["?q_limit"].Value = ir.Limit;
+                        cmd.Parameters["?rc_time"].Value = race.StartTime;
                         cmd.Parameters["?fitting_loss"].Value = ir.FittingLoss;
                         cmd.Parameters["?amt"].Value = ir.Amount;
                         cmd.Parameters["?od"].Value = ir.Odds;
