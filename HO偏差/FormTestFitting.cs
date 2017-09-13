@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace HO偏差
 {
@@ -56,8 +57,10 @@ namespace HO偏差
                         {
                             RaceData race = RaceData.Load(filename);
 
+                            int i = 0;
                             foreach (KeyValuePair<long, RaceDataItem> item in race)
                             {
+                                if (i++ == 0) continue;
                                 this.Invoke(new MethodInvoker(delegate
                                 {
                                     this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > {1} of {2} fitting...\r\n", DateTime.Now, item.Key, filename));
@@ -75,7 +78,24 @@ namespace HO偏差
                                 break;
                             }
 
-                            race.Save(filename + ".fit");
+                            Match m = Regex.Match(filename, @"^(.+?)\.fit(\d*)$");
+                            if (m.Success)
+                            {
+                                if (m.Groups[2].Value == "")
+                                {
+                                    race.Save(m.Groups[1].Value + ".fit2");
+                                }
+                                else
+                                {
+                                    race.Save(m.Groups[1].Value + ".fit" + (int.Parse(m.Groups[2].Value) + 1).ToString());
+                                }
+                            }
+                            else
+                            {
+                                race.Save(filename + ".fit");
+                            }
+
+                            
                             this.Invoke(new MethodInvoker(delegate
                             {
                                 this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > file {1} finished\r\n", DateTime.Now, filename));

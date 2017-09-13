@@ -117,6 +117,26 @@ namespace HO偏差
             throw new Exception("Try read data failed 10 times", lastEx);
         }
 
+        private string getRawInfoByAPI(string type, string id)
+        {
+            System.Net.WebClient wc = new System.Net.WebClient();
+            using (System.IO.Stream s = wc.OpenRead(string.Format("http://120.24.210.35:3000/data/market/{0}?record_id={1}", type, id)))
+            {
+                using (System.IO.StreamReader sr = new System.IO.StreamReader(s))
+                {
+                    JObject jo = (JObject)JsonConvert.DeserializeObject(sr.ReadToEnd());
+                    if ((string)jo["STS"] == "OK")
+                    {
+                        return (string)jo["data"];
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+        }
+
         private void handle()
         {
             using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
@@ -128,7 +148,8 @@ SELECT a.*, b.`id` card_id FROM ct_race a
 INNER JOIN ct_card b ON b.`tournament_id` = a.`tournament_id` AND b.`tote_type` = 'HK'
 WHERE a.time_text IS NOT NULL
 AND a.race_loc = 3 
-LIMIT 28,8
+and a.id >= 685833
+LIMIT 10
 ", conn))
                 {
                     using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
@@ -174,7 +195,7 @@ LIMIT 28,8
 
                                     foreach (long tp in race.Keys.ToArray())
                                     {
-                                        using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_wp_tote where raw_info is not null and rc_id = ?rc_id and cd_id = ?cd_id and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
+                                        using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_wp_tote where rc_id = ?rc_id and cd_id = ?cd_id and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                         {
                                             cmd2.CommandTimeout = 120000;
                                             cmd2.Parameters.AddWithValue("?rc_id", row["id"]);
@@ -189,16 +210,34 @@ LIMIT 28,8
                                                 {
                                                     RaceDataItem item = race[tp];
 
-                                                    JArray ja = (JArray)JsonConvert.DeserializeObject((string)dr["raw_info"]);
-                                                    foreach (JObject jo in ja)
+                                                    string rawInfo;
+                                                    if (!object.Equals(dr["raw_info"], DBNull.Value))
                                                     {
-                                                        double win = (double)jo["win"];
-                                                        double plc = (double)jo["plc"];
-                                                        if (win != 0 && plc != 0)
+                                                        rawInfo = (string)dr["raw_info"];
+                                                    }
+                                                    else
+                                                    {
+                                                        rawInfo = this.getRawInfoByAPI("get_tote_wp_raw_info", dr["id"].ToString());
+                                                    }
+
+                                                    if (rawInfo != null)
+                                                    {
+                                                        JArray ja = (JArray)JsonConvert.DeserializeObject(rawInfo);
+                                                        foreach (JObject jo in ja)
                                                         {
-                                                            item.Odds.Add(new Hrs(jo["horseNo"].ToString(), win, plc));
+                                                            double win = (double)jo["win"];
+                                                            double plc = (double)jo["plc"];
+                                                            if (win != 0 && plc != 0)
+                                                            {
+                                                                item.Odds.Add(new Hrs(jo["horseNo"].ToString(), win, plc));
+                                                            }
+
                                                         }
-                                                        
+                                                    }
+                                                    else
+                                                    {
+                                                        race.Remove(tp);
+                                                        continue;
                                                     }
                                                 }
                                                 else
@@ -209,7 +248,7 @@ LIMIT 28,8
                                             }
                                         }
 
-                                        using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_qn_tote where raw_info is not null and rc_id = ?rc_id and cd_id = ?cd_id and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
+                                        using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_qn_tote where rc_id = ?rc_id and cd_id = ?cd_id and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                         {
                                             cmd2.CommandTimeout = 120000;
                                             cmd2.Parameters.AddWithValue("?rc_id", row["id"]);
@@ -224,9 +263,27 @@ LIMIT 28,8
                                                 {
                                                     RaceDataItem item = race[tp];
 
-                                                    JObject jo = (JObject)JsonConvert.DeserializeObject((string)dr["raw_info"]);
-                                                    this.parseQnTote((string)jo["text_q"], item.Odds.SpQ);
-                                                    this.parseQnTote((string)jo["text_qp"], item.Odds.SpQp);
+                                                    string rawInfo;
+                                                    if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                    {
+                                                        rawInfo = (string)dr["raw_info"];
+                                                    }
+                                                    else
+                                                    {
+                                                        rawInfo = this.getRawInfoByAPI("get_tote_qn_raw_info", dr["id"].ToString());
+                                                    }
+
+                                                    if (rawInfo != null)
+                                                    {
+                                                        JObject jo = (JObject)JsonConvert.DeserializeObject(rawInfo);
+                                                        this.parseQnTote((string)jo["text_q"], item.Odds.SpQ);
+                                                        this.parseQnTote((string)jo["text_qp"], item.Odds.SpQp);
+                                                    }
+                                                    else
+                                                    {
+                                                        race.Remove(tp);
+                                                        continue;
+                                                    }
                                                 }
                                                 else
                                                 {
@@ -254,7 +311,7 @@ LIMIT 28,8
                                         }
                                     }
 
-                                    using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_wp_discount where raw_info is not null and cd_id = ?cd_id and direction = ?d and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
+                                    using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_wp_discount where cd_id = ?cd_id and direction = ?d and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                     {
                                         cmd2.CommandTimeout = 120000;
                                         cmd2.Parameters.AddWithValue("?cd_id", cardId);
@@ -268,7 +325,28 @@ LIMIT 28,8
                                         {
                                             if (this.TryRead(dr))
                                             {
-                                                this.parseWpDiscount((string)dr["raw_info"], items, dr["direction"].ToString());
+                                                string rawInfo;
+                                                if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                {
+                                                    rawInfo = (string)dr["raw_info"];
+                                                }
+                                                else
+                                                {
+                                                    rawInfo = this.getRawInfoByAPI("get_discount_wp_raw_info", dr["id"].ToString());
+                                                }
+
+                                                if (rawInfo != null)
+                                                {
+                                                    this.parseWpDiscount(rawInfo, items, dr["direction"].ToString());
+                                                }
+                                                else
+                                                {
+                                                    foreach (RaceData race in data.Where(x => x.CardID == cardId))
+                                                    {
+                                                        race.Remove(tp);
+                                                    }
+                                                    continue;
+                                                }
                                             }
                                             else
                                             {
@@ -285,7 +363,28 @@ LIMIT 28,8
                                         {
                                             if (this.TryRead(dr))
                                             {
-                                                this.parseWpDiscount((string)dr["raw_info"], items, dr["direction"].ToString());
+                                                string rawInfo;
+                                                if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                {
+                                                    rawInfo = (string)dr["raw_info"];
+                                                }
+                                                else
+                                                {
+                                                    rawInfo = this.getRawInfoByAPI("get_discount_wp_raw_info", dr["id"].ToString());
+                                                }
+
+                                                if (rawInfo != null)
+                                                {
+                                                    this.parseWpDiscount(rawInfo, items, dr["direction"].ToString());
+                                                }
+                                                else
+                                                {
+                                                    foreach (RaceData race in data.Where(x => x.CardID == cardId))
+                                                    {
+                                                        race.Remove(tp);
+                                                    }
+                                                    continue;
+                                                }
                                             }
                                             else
                                             {
@@ -298,7 +397,7 @@ LIMIT 28,8
                                         }
                                     }
 
-                                    using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_qn_discount where raw_info is not null and cd_id = ?cd_id and direction = ?d and `type` = ?type and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
+                                    using (MySqlCommand cmd2 = new MySqlCommand("select * from ct_raw_qn_discount where cd_id = ?cd_id and direction = ?d and `type` = ?type and record_time between ?tb and ?te order by abs(record_time-?tp) limit 1", conn))
                                     {
                                         cmd2.CommandTimeout = 120000;
                                         cmd2.Parameters.AddWithValue("?cd_id", cardId);
@@ -314,7 +413,28 @@ LIMIT 28,8
                                         {
                                             if (this.TryRead(dr))
                                             {
-                                                this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
+                                                string rawInfo;
+                                                if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                {
+                                                    rawInfo = (string)dr["raw_info"];
+                                                }
+                                                else
+                                                {
+                                                    rawInfo = this.getRawInfoByAPI("get_discount_qn_raw_info", dr["id"].ToString());
+                                                }
+
+                                                if (rawInfo != null)
+                                                {
+                                                    this.parseQnDiscount(rawInfo, items, dr["direction"].ToString(), dr["type"].ToString());
+                                                }
+                                                else
+                                                {
+                                                    foreach (RaceData race in data.Where(x => x.CardID == cardId))
+                                                    {
+                                                        race.Remove(tp);
+                                                    }
+                                                    continue;
+                                                }
                                             }
                                             else
                                             {
@@ -332,7 +452,28 @@ LIMIT 28,8
                                         {
                                             if (this.TryRead(dr))
                                             {
-                                                this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
+                                                string rawInfo;
+                                                if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                {
+                                                    rawInfo = (string)dr["raw_info"];
+                                                }
+                                                else
+                                                {
+                                                    rawInfo = this.getRawInfoByAPI("get_discount_qn_raw_info", dr["id"].ToString());
+                                                }
+
+                                                if (rawInfo != null)
+                                                {
+                                                    this.parseQnDiscount(rawInfo, items, dr["direction"].ToString(), dr["type"].ToString());
+                                                }
+                                                else
+                                                {
+                                                    foreach (RaceData race in data.Where(x => x.CardID == cardId))
+                                                    {
+                                                        race.Remove(tp);
+                                                    }
+                                                    continue;
+                                                }
                                             }
                                             else
                                             {
@@ -350,7 +491,28 @@ LIMIT 28,8
                                         {
                                             if (this.TryRead(dr))
                                             {
-                                                this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
+                                                string rawInfo;
+                                                if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                {
+                                                    rawInfo = (string)dr["raw_info"];
+                                                }
+                                                else
+                                                {
+                                                    rawInfo = this.getRawInfoByAPI("get_discount_qn_raw_info", dr["id"].ToString());
+                                                }
+
+                                                if (rawInfo != null)
+                                                {
+                                                    this.parseQnDiscount((string)rawInfo, items, dr["direction"].ToString(), dr["type"].ToString());
+                                                }
+                                                else
+                                                {
+                                                    foreach (RaceData race in data.Where(x => x.CardID == cardId))
+                                                    {
+                                                        race.Remove(tp);
+                                                    }
+                                                    continue;
+                                                }
                                             }
                                             else
                                             {
@@ -368,7 +530,28 @@ LIMIT 28,8
                                         {
                                             if (this.TryRead(dr))
                                             {
-                                                this.parseQnDiscount((string)dr["raw_info"], items, dr["direction"].ToString(), dr["type"].ToString());
+                                                string rawInfo;
+                                                if (!object.Equals(dr["raw_info"], DBNull.Value))
+                                                {
+                                                    rawInfo = (string)dr["raw_info"];
+                                                }
+                                                else
+                                                {
+                                                    rawInfo = this.getRawInfoByAPI("get_discount_qn_raw_info", dr["id"].ToString());
+                                                }
+
+                                                if (rawInfo != null)
+                                                {
+                                                    this.parseQnDiscount(rawInfo, items, dr["direction"].ToString(), dr["type"].ToString());
+                                                }
+                                                else
+                                                {
+                                                    foreach (RaceData race in data.Where(x => x.CardID == cardId))
+                                                    {
+                                                        race.Remove(tp);
+                                                    }
+                                                    continue;
+                                                }
                                             }
                                             else
                                             {
