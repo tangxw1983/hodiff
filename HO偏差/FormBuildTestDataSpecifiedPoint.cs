@@ -148,7 +148,7 @@ SELECT a.*, b.`id` card_id FROM ct_race a
 INNER JOIN ct_card b ON b.`tournament_id` = a.`tournament_id` AND b.`tote_type` = 'HK'
 WHERE a.time_text IS NOT NULL
 AND a.race_loc = 3 
-and a.id >= 685833
+and a.id >= 699540
 LIMIT 10
 ", conn))
                 {

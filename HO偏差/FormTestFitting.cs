@@ -60,7 +60,7 @@ namespace HO偏差
                             int i = 0;
                             foreach (KeyValuePair<long, RaceDataItem> item in race)
                             {
-                                if (i++ == 0) continue;
+                                if (i++ == -1) continue;
                                 this.Invoke(new MethodInvoker(delegate
                                 {
                                     this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > {1} of {2} fitting...\r\n", DateTime.Now, item.Key, filename));
@@ -75,7 +75,7 @@ namespace HO偏差
                                     this.txtFitLog.AppendText(string.Format("{0:HH:mm:ss} > {1} of {2} E = {3}\r\n", DateTime.Now, item.Key, filename, E));
                                 }));
 
-                                break;
+                                if (i >= 2) break;
                             }
 
                             Match m = Regex.Match(filename, @"^(.+?)\.fit(\d*)$");

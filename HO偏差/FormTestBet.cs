@@ -60,10 +60,12 @@ namespace HO偏差
         private const double WP_STEP = 5;
         private const double QN_STEP = 10;
         private const double LIMIT_SCALE = 10;
+        private const int MODEL = 1;
 
         class InvestRecordWp
         {
             public long TimeKey { get; set; }
+            public int Model { get; set; }
             public ulong CardID { get; set; }
             public int RaceNo { get; set; }
             public string Direction { get; set; }
@@ -83,6 +85,7 @@ namespace HO偏差
         class InvestRecordQn
         {
             public long TimeKey { get; set; }
+            public int Model { get; set; }
             public ulong CardID { get; set; }
             public int RaceNo { get; set; }
             public string Direction { get; set; }
@@ -99,10 +102,14 @@ namespace HO偏差
         private void handle(string filename)
         {
             RaceData race = RaceData.Load(filename);
+            if (race.Count < 2) return;
             long tp = race.First().Key;
+            if (tp - race.Skip(1).First().Key != 300000) return;
             RaceDataItem item = race.First().Value;
+            RaceDataItem item2 = race.Skip(1).First().Value;
+            if (item.Odds.E == 0 || item2.Odds.E == 0) return;
             double[] p1, p3, pq_win, pq_plc;
-            Fitting.calcProbility(item.Odds, out p1, out p3, out pq_win, out pq_plc);
+            Fitting.calcProbility(item2.Odds, out p1, out p3, out pq_win, out pq_plc);
             
             //// 根据概率计算各项投注的最低Odds
             //double[] o1 = p1.Select(x => MIN_R / x).ToArray();
@@ -115,9 +122,14 @@ namespace HO偏差
             {
                 Hrs h = item.Odds[i];
 
+                double sp_w_min = Math.Min(h.Win, item2.Odds[i].Win);
+                double sp_w_max = Math.Max(h.Win, item2.Odds[i].Win);
+                double sp_p_min = Math.Min(h.Plc, item2.Odds[i].Plc);
+                double sp_p_max = Math.Max(h.Plc, item2.Odds[i].Plc);
+
                 // For Bet
                 {
-                    WaterWPList vlist = item.Waters.GetWpEatWater(h.No).GetValuableWater(MIN_R, h.Win, p1[i], h.Plc, p3[i]);
+                    WaterWPList vlist = item.Waters.GetWpEatWater(h.No).GetValuableWater(MIN_R, sp_w_min, p1[i], sp_p_min, p3[i]);
                     double bet_amount_win = 0, bet_amount_plc = 0;
                     bool full_win = false, full_plc = false;
                     foreach (WaterWPItem w in vlist.OrderBy(x => x.Percent))
@@ -129,7 +141,7 @@ namespace HO偏差
 
                         if (w.WinAmount > 0)
                         {
-                            double O = Math.Min(w.WinLimit / LIMIT_SCALE, h.Win) * 100 / w.Percent;
+                            double O = Math.Min(w.WinLimit / LIMIT_SCALE, sp_w_min) * 100 / w.Percent;
                             double max_bet = (T * Math.Pow(O * p1[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * p1[i] * (1 - p1[i]));
                             if (bet_amount_win >= max_bet)
                             {
@@ -144,7 +156,7 @@ namespace HO偏差
 
                         if (w.PlcAmount > 0)
                         {
-                            double O = Math.Min(w.PlcLimit / LIMIT_SCALE, h.Plc) * 100 / w.Percent;
+                            double O = Math.Min(w.PlcLimit / LIMIT_SCALE, sp_p_min) * 100 / w.Percent;
                             double max_bet = (T * Math.Pow(O * p3[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * p3[i] * (1 - p3[i]));
                             if (bet_amount_plc >= max_bet)
                             {
@@ -172,6 +184,7 @@ namespace HO偏差
                                 InvestRecordWp ir = new InvestRecordWp()
                                 {
                                     TimeKey = tp,
+                                    Model = MODEL,
                                     CardID = race.CardID,
                                     RaceNo = race.RaceNo,
                                     Direction = "BET",
@@ -185,13 +198,13 @@ namespace HO偏差
                                 if (w.WinLimit > 0)
                                 {
                                     ir.WinAmount = bet_amount;
-                                    ir.WinOdds = h.Win;
+                                    ir.WinOdds = sp_w_min;
                                     ir.WinProbility = p1[i];
                                 }
                                 if (w.PlcLimit > 0)
                                 {
                                     ir.PlcAmount = bet_amount;
-                                    ir.PlcOdds = h.Plc;
+                                    ir.PlcOdds = sp_p_min;
                                     ir.PlcProbility = p3[i];
                                 }
 
@@ -206,7 +219,7 @@ namespace HO偏差
 
                 // For Eat
                 {
-                    WaterWPList vlist = item.Waters.GetWpBetWater(h.No).GetValuableWater(MIN_R, h.Win, p1[i], h.Plc, p3[i]);
+                    WaterWPList vlist = item.Waters.GetWpBetWater(h.No).GetValuableWater(MIN_R, sp_w_max, p1[i], sp_p_max, p3[i]);
                     double eat_amount_win = 0, eat_amount_plc = 0;
                     bool full_win = false, full_plc = false;
                     foreach (WaterWPItem w in vlist.OrderByDescending(x => x.Percent))
@@ -218,9 +231,9 @@ namespace HO偏差
 
                         if (w.WinAmount > 0)
                         {
-                            double O = 1 + w.Percent / 100 / Math.Min(w.WinLimit / LIMIT_SCALE, h.Win);
+                            double O = 1 + w.Percent / 100 / Math.Min(w.WinLimit / LIMIT_SCALE, sp_w_max);
                             double max_eat = (T * Math.Pow(O * (1 - p1[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - p1[i]) * p1[i]);
-                            max_eat = max_eat / Math.Min(w.WinLimit / LIMIT_SCALE, h.Win);
+                            max_eat = max_eat / Math.Min(w.WinLimit / LIMIT_SCALE, sp_w_max);
                             if (eat_amount_win >= max_eat)
                             {
                                 full_win = true;
@@ -234,9 +247,9 @@ namespace HO偏差
 
                         if (w.PlcAmount > 0)
                         {
-                            double O = 1 + w.Percent / 100 / Math.Min(w.PlcLimit / LIMIT_SCALE, h.Plc);
+                            double O = 1 + w.Percent / 100 / Math.Min(w.PlcLimit / LIMIT_SCALE, sp_p_max);
                             double max_eat = (T * Math.Pow(O * (1 - p3[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - p3[i]) * p3[i]);
-                            max_eat = max_eat / Math.Min(w.PlcLimit / LIMIT_SCALE, h.Plc);
+                            max_eat = max_eat / Math.Min(w.PlcLimit / LIMIT_SCALE, sp_p_max);
                             if (eat_amount_plc >= max_eat)
                             {
                                 full_plc = true;
@@ -263,6 +276,7 @@ namespace HO偏差
                                 InvestRecordWp ir = new InvestRecordWp()
                                 {
                                     TimeKey = tp,
+                                    Model = MODEL,
                                     CardID = race.CardID,
                                     RaceNo = race.RaceNo,
                                     Direction = "EAT",
@@ -276,13 +290,13 @@ namespace HO偏差
                                 if (w.WinLimit > 0)
                                 {
                                     ir.WinAmount = eat_amount;
-                                    ir.WinOdds = h.Win;
+                                    ir.WinOdds = sp_w_max;
                                     ir.WinProbility = p1[i];
                                 }
                                 if (w.PlcLimit > 0)
                                 {
                                     ir.PlcAmount = eat_amount;
-                                    ir.PlcOdds = h.Plc;
+                                    ir.PlcOdds = sp_p_max;
                                     ir.PlcProbility = p3[i];
                                 }
 
@@ -307,15 +321,16 @@ namespace HO偏差
 
                 if (pq_win != null)
                 {
-                    double sp = item.Odds.SpQ[horseNo];
+                    double sp_min = Math.Min(item.Odds.SpQ[horseNo], item2.Odds.SpQ[horseNo]);
+                    double sp_max = Math.Max(item.Odds.SpQ[horseNo], item2.Odds.SpQ[horseNo]);
 
                     // For Bet
                     {
-                        WaterQnList vlist = item.Waters.GetQnEatWater(horseNo).GetValuableWater(MIN_R, sp, pq_win[i]);
+                        WaterQnList vlist = item.Waters.GetQnEatWater(horseNo).GetValuableWater(MIN_R, sp_min, pq_win[i]);
                         double bet_amount = 0;
                         foreach (WaterQnItem w in vlist.OrderBy(x => x.Percent))
                         {
-                            double O = Math.Min(w.Limit / LIMIT_SCALE, sp) * 100 / w.Percent;
+                            double O = Math.Min(w.Limit / LIMIT_SCALE, sp_min) * 100 / w.Percent;
                             double max_bet = (T * Math.Pow(O * pq_win[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * pq_win[i] * (1 - pq_win[i]));
 
                             if (bet_amount >= max_bet)
@@ -330,6 +345,7 @@ namespace HO偏差
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
                                     TimeKey = tp,
+                                    Model = MODEL,
                                     CardID = race.CardID,
                                     RaceNo = race.RaceNo,
                                     Direction = "BET",
@@ -338,7 +354,7 @@ namespace HO偏差
                                     Percent = w.Percent,
                                     Amount = current_amount,
                                     Limit = w.Limit,
-                                    Odds = sp,
+                                    Odds = sp_min,
                                     Probility = pq_win[i],
                                     FittingLoss = item.Odds.E
                                 };
@@ -350,13 +366,13 @@ namespace HO偏差
 
                     // For Eat
                     {
-                        WaterQnList vlist = item.Waters.GetQnBetWater(horseNo).GetValuableWater(MIN_R, sp, pq_win[i]);
+                        WaterQnList vlist = item.Waters.GetQnBetWater(horseNo).GetValuableWater(MIN_R, sp_max, pq_win[i]);
                         double eat_amount = 0;
                         foreach (WaterQnItem w in vlist.OrderByDescending(x => x.Percent))
                         {
-                            double O = 1 + w.Percent / 100 / Math.Min(w.Limit / LIMIT_SCALE, sp);
+                            double O = 1 + w.Percent / 100 / Math.Min(w.Limit / LIMIT_SCALE, sp_max);
                             double max_eat = (T * Math.Pow(O * (1 - pq_win[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - pq_win[i]) * pq_win[i]);
-                            max_eat = max_eat / Math.Min(w.Limit / LIMIT_SCALE, sp);
+                            max_eat = max_eat / Math.Min(w.Limit / LIMIT_SCALE, sp_max);
                             if (eat_amount >= max_eat)
                             {
                                 break;
@@ -369,6 +385,7 @@ namespace HO偏差
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
                                     TimeKey = tp,
+                                    Model = MODEL,
                                     CardID = race.CardID,
                                     RaceNo = race.RaceNo,
                                     Direction = "EAT",
@@ -377,7 +394,7 @@ namespace HO偏差
                                     Percent = w.Percent,
                                     Amount = current_amount,
                                     Limit = w.Limit,
-                                    Odds = sp,
+                                    Odds = sp_max,
                                     Probility = pq_win[i],
                                     FittingLoss = item.Odds.E
                                 };
@@ -390,15 +407,16 @@ namespace HO偏差
 
                 if (pq_plc != null)
                 {
-                    double sp = item.Odds.SpQp[horseNo];
+                    double sp_min = Math.Min(item.Odds.SpQp[horseNo], item2.Odds.SpQp[horseNo]);
+                    double sp_max = Math.Max(item.Odds.SpQp[horseNo], item2.Odds.SpQp[horseNo]);
 
                     // For Bet
                     {
-                        WaterQnList vlist = item.Waters.GetQpEatWater(horseNo).GetValuableWater(MIN_R, sp, pq_plc[i]);
+                        WaterQnList vlist = item.Waters.GetQpEatWater(horseNo).GetValuableWater(MIN_R, sp_min, pq_plc[i]);
                         double bet_amount = 0;
                         foreach (WaterQnItem w in vlist.OrderBy(x => x.Percent))
                         {
-                            double O = Math.Min(w.Limit / LIMIT_SCALE, sp) * 100 / w.Percent;
+                            double O = Math.Min(w.Limit / LIMIT_SCALE, sp_min) * 100 / w.Percent;
                             double max_bet = (T * Math.Pow(O * pq_plc[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * pq_plc[i] * (1 - pq_plc[i]));
 
                             if (bet_amount >= max_bet)
@@ -413,6 +431,7 @@ namespace HO偏差
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
                                     TimeKey = tp,
+                                    Model = MODEL,
                                     CardID = race.CardID,
                                     RaceNo = race.RaceNo,
                                     Direction = "BET",
@@ -421,7 +440,7 @@ namespace HO偏差
                                     Percent = w.Percent,
                                     Amount = current_amount,
                                     Limit = w.Limit,
-                                    Odds = sp,
+                                    Odds = sp_min,
                                     Probility = pq_plc[i],
                                     FittingLoss = item.Odds.E
                                 };
@@ -433,13 +452,13 @@ namespace HO偏差
 
                     // For Eat
                     {
-                        WaterQnList vlist = item.Waters.GetQpBetWater(horseNo).GetValuableWater(MIN_R, sp, pq_win[i]);
+                        WaterQnList vlist = item.Waters.GetQpBetWater(horseNo).GetValuableWater(MIN_R, sp_max, pq_win[i]);
                         double eat_amount = 0;
                         foreach (WaterQnItem w in vlist.OrderByDescending(x => x.Percent))
                         {
-                            double O = 1 + w.Percent / 100 / Math.Min(w.Limit / LIMIT_SCALE, sp);
+                            double O = 1 + w.Percent / 100 / Math.Min(w.Limit / LIMIT_SCALE, sp_max);
                             double max_eat = (T * Math.Pow(O * (1 - pq_plc[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - pq_plc[i]) * pq_plc[i]);
-                            max_eat = max_eat / Math.Min(w.Limit / LIMIT_SCALE, sp);
+                            max_eat = max_eat / Math.Min(w.Limit / LIMIT_SCALE, sp_max);
                             if (eat_amount >= max_eat)
                             {
                                 break;
@@ -452,6 +471,7 @@ namespace HO偏差
                                 InvestRecordQn ir = new InvestRecordQn()
                                 {
                                     TimeKey = tp,
+                                    Model = MODEL,
                                     CardID = race.CardID,
                                     RaceNo = race.RaceNo,
                                     Direction = "EAT",
@@ -460,7 +480,7 @@ namespace HO偏差
                                     Percent = w.Percent,
                                     Amount = current_amount,
                                     Limit = w.Limit,
-                                    Odds = sp,
+                                    Odds = sp_max,
                                     Probility = pq_plc[i],
                                     FittingLoss = item.Odds.E
                                 };
@@ -477,12 +497,13 @@ namespace HO偏差
                 conn.Open();
 
                 using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_wp (time_key,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,rc_time,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob)
-values (?time_key,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?rc_time,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob)
+insert into sl_invest_wp (time_key,model,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,rc_time,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob)
+values (?time_key,?model,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?rc_time,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob)
 on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_prob=?w_prob,p_amt=?p_amt,p_od=?p_od,p_prob=?p_prob,lmt=CURRENT_TIMESTAMP()
 ", conn))
                 {
                     cmd.Parameters.Add("?time_key", MySqlDbType.Int64);
+                    cmd.Parameters.Add("?model", MySqlDbType.Int32);
                     cmd.Parameters.Add("?cd_id", MySqlDbType.UInt64);
                     cmd.Parameters.Add("?rc_no", MySqlDbType.Int32);
                     cmd.Parameters.Add("?direction", MySqlDbType.VarChar, 10);
@@ -502,6 +523,7 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt
                     foreach (InvestRecordWp ir in wp_records)
                     {
                         cmd.Parameters["?time_key"].Value = ir.TimeKey;
+                        cmd.Parameters["?model"].Value = ir.Model;
                         cmd.Parameters["?cd_id"].Value = ir.CardID;
                         cmd.Parameters["?rc_no"].Value = ir.RaceNo;
                         cmd.Parameters["?direction"].Value = ir.Direction;
@@ -523,12 +545,13 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt
                 }
 
                 using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_qn(time_key,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,rc_time,fitting_loss,amt,od,prob)
-values (?time_key,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?rc_time,?fitting_loss,?amt,?od,?prob)
+insert into sl_invest_qn(time_key,model,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,rc_time,fitting_loss,amt,od,prob)
+values (?time_key,?model,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?rc_time,?fitting_loss,?amt,?od,?prob)
 on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lmt=CURRENT_TIMESTAMP()
 ", conn))
                 {
                     cmd.Parameters.Add("?time_key", MySqlDbType.Int64);
+                    cmd.Parameters.Add("?model", MySqlDbType.Int32);
                     cmd.Parameters.Add("?cd_id", MySqlDbType.UInt64);
                     cmd.Parameters.Add("?rc_no", MySqlDbType.Int32);
                     cmd.Parameters.Add("?direction", MySqlDbType.VarChar, 10);
@@ -545,6 +568,7 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=
                     foreach (InvestRecordQn ir in qn_records)
                     {
                         cmd.Parameters["?time_key"].Value = ir.TimeKey;
+                        cmd.Parameters["?model"].Value = ir.Model;
                         cmd.Parameters["?cd_id"].Value = ir.CardID;
                         cmd.Parameters["?rc_no"].Value = ir.RaceNo;
                         cmd.Parameters["?direction"].Value = ir.Direction;
