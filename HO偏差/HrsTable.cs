@@ -13,7 +13,7 @@ namespace HO偏差
     {
         private Hrs()
         {
-
+            this.Var = 1;
         }
 
         public Hrs(string no, double win, double plc)
@@ -21,6 +21,7 @@ namespace HO偏差
             this.No = no;
             this.Win = win;
             this.Plc = plc;
+            this.Var = 1;
         }
 
         public string No { get; private set; }
