@@ -544,15 +544,10 @@ namespace HO偏差
             }
         }
 
-        public static double fit(HrsTable table, double epsilon)
+        public static double[] calcBetRateForWin(HrsTable table, out double r)
         {
             int CNT = table.Count;
-            int PLC_CNT = 3;
-            if (CNT <= 6) PLC_CNT = 2;
-
             double[] s1 = table.SpWin;
-            double[] s3 = table.SpPlc;
-
             double rr1 = 1 / s1.Sum(x => 1 / x);
 
             // 计算WIN投注比率
@@ -561,6 +556,18 @@ namespace HO偏差
             {
                 ph1[i] = rr1 / s1[i];
             }
+
+            r = rr1;
+            return ph1;
+        }
+
+        public static double[] calcBetRateForPlc(HrsTable table, out double r)
+        {
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= 6) PLC_CNT = 2;
+            
+            double[] s3 = table.SpPlc;
 
             // 计算PLC赔付率
             IOrderedEnumerable<double> sorted_s3 = s3.OrderBy(x => x);
@@ -584,6 +591,14 @@ namespace HO偏差
                 }
             }
 
+            r = rr3;
+            return ph3;
+        }
+
+        public static double[] calcBetRateForQn(HrsTable table, out double r)
+        {
+            r = 0;
+
             // 计算Q的投注比例
             double[] pqw = null;
             if (table.HasSpQ)
@@ -598,10 +613,24 @@ namespace HO偏差
                     {
                         pqw[i] = rqw / sqw[i];
                     }
+
+                    r = rqw;
                 }
             }
 
+            return pqw;
+        }
+
+        public static double[] calcBetRateForQp(HrsTable table, out double r)
+        {
+            r = 0;
+
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= 6) PLC_CNT = 2;
+
             // 计算QP的投注比例
+            // 修正发现几个错误引用了其他计算的变量 2017-09-17
             double[] pqp = null;
             if (table.HasSpQp)
             {
@@ -615,12 +644,12 @@ namespace HO偏差
                     // 计算QP赔付率
                     IOrderedEnumerable<double> sorted_sqp = sqp.OrderBy(x => x);
                     double oqp3 = sorted_sqp.Skip(QP_CNT - 1).First();
-                    double aqp = QP_CNT * (oqp3 - 1) / (QP_CNT * (oqp3 - 1) + 1) * sorted_s3.Take(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1)));
+                    double aqp = QP_CNT * (oqp3 - 1) / (QP_CNT * (oqp3 - 1) + 1) * sorted_sqp.Take(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1)));
                     double bqp = sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1));
-                    double rqp = (aqp + 1) / (bqp + b);
+                    double rqp = (aqp + 1) / (bqp + bqp);
 
                     // 计算投注比例
-                    double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1)) - 1) * (QP_CNT * (o3 - 1) + 1));
+                    double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1)) - 1) * (QP_CNT * (oqp3 - 1) + 1));
                     for (int i = 0; i < pqp.Length; i++)
                     {
                         if (sqp[i] <= oqp3)
@@ -632,8 +661,28 @@ namespace HO偏差
                             pqp[i] = pqp3 * (QP_CNT * (oqp3 - 1) + 1) / (QP_CNT * (sqp[i] - 1) + 1);
                         }
                     }
+
+                    r = rqp;
                 }
             }
+
+            return pqp;
+        }
+
+        public static double fit(HrsTable table, double epsilon)
+        {
+            int CNT = table.Count;
+
+            double[] s1 = table.SpWin;
+            double[] s3 = table.SpPlc;
+
+            double[] ph1, ph3, pqw, pqp;
+            double rr1, rr3, rqw, rqp;
+
+            ph1 = calcBetRateForWin(table, out rr1);
+            ph3 = calcBetRateForPlc(table, out rr3);
+            pqw = calcBetRateForQn(table, out rqw);
+            pqp = calcBetRateForQp(table, out rqp);
 
             // 设定top1第3的项期望=0，方差=1
             double trd_s1 = s1.OrderBy(x => x).Skip(2).First();

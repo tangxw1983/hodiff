@@ -60,7 +60,8 @@ namespace HO偏差
         private const double WP_STEP = 5;
         private const double QN_STEP = 10;
         private const double LIMIT_SCALE = 10;
-        private const int MODEL = 1;
+        private const int MODEL = 2;
+        private const double E_THRESHOLD_SCALE = 1.1;
 
         class InvestRecordWp
         {
@@ -99,6 +100,20 @@ namespace HO偏差
             public double FittingLoss { get; set; }
         }
 
+        private double cross_entropy(double[] p, double[] q)
+        {
+            if (p == null && q == null) return 0;
+            if (p == null || q == null) return double.MaxValue;     // 一项为空另一项不为空，返回无穷大
+            if (p.Length != q.Length) return double.MaxValue;       // 两项长度不一，代表马有退出，返回无穷大
+
+            double E = 0;
+            for (int i = 0; i < p.Length; i++)
+            {
+                E += -p[i] * Math.Log(q[i]);
+            }
+            return E;
+        }
+
         private void handle(string filename)
         {
             RaceData race = RaceData.Load(filename);
@@ -111,11 +126,22 @@ namespace HO偏差
             double[] p1, p3, pq_win, pq_plc;
             Fitting.calcProbility(item2.Odds, out p1, out p3, out pq_win, out pq_plc);
             
-            //// 根据概率计算各项投注的最低Odds
-            //double[] o1 = p1.Select(x => MIN_R / x).ToArray();
-            //double[] o3 = p3.Select(x => MIN_R / x).ToArray();
-            //double[] oq_win = pq_win == null ? null : pq_win.Select(x => MIN_R / x).ToArray();
-            //double[] oq_plc = pq_plc == null ? null : pq_plc.Select(x => MIN_R / x).ToArray();
+            // 计算预计概率与当前赔率下下注比例的交叉熵
+            double[] q1, qq;
+            double r1, rq;
+            q1 = Fitting.calcBetRateForWin(item.Odds, out r1);
+            qq = Fitting.calcBetRateForQn(item.Odds, out rq);
+            double E = cross_entropy(p1, q1) + cross_entropy(pq_win, qq);
+
+            // 当前赔率下交叉熵过大则退出，不下单
+            if (E > item2.Odds.E * E_THRESHOLD_SCALE)
+            {
+                this.Invoke(new MethodInvoker(delegate
+                {
+                    this.txtLog.AppendText(string.Format("{0:HH:mm:ss} > file {1} 变化过于剧烈{2}/{3}\r\n", DateTime.Now, filename, E, item2.Odds.E));
+                }));
+                return;
+            }
 
             List<InvestRecordWp> wp_records = new List<InvestRecordWp>();
             for(int i=0;i<item.Odds.Count;i++)
