@@ -15,10 +15,13 @@ namespace HO偏差
         private const int PRECISION = 5;
 
         private static double SQRT_2_PI = Math.Sqrt(2 * Math.PI);
+        private static double MIN_EXP_VALUE = -PRECISION * Math.Log(10);
 
         private static Dictionary<double, double> _cached_exp_result = new Dictionary<double, double>();
         private static double exp(double x)
         {
+            if (x < MIN_EXP_VALUE) return 0;
+
             double r = Math.Round(x, PRECISION);
             if (!_cached_exp_result.ContainsKey(r))
             {
@@ -649,7 +652,6 @@ namespace HO偏差
             }
 
             double[] ee, dd;
-
             if (table.E == 0)
             {
                 ee = new double[CNT];
@@ -675,7 +677,13 @@ namespace HO偏差
                 ee = table.Select(x => x.Mean).ToArray();
                 dd = table.Select(x => x.Var).ToArray();
             }
-            
+
+            double[] ee2 = new double[CNT], dd2 = new double[CNT];
+            double minE = table.E == 0 ? double.MaxValue : table.E;
+            int minE_t = 0;
+
+            Array.Copy(ee, ee2, CNT);
+            Array.Copy(dd, dd2, CNT);
 
             double lastE = double.MaxValue;
             int reach_count = 0;
@@ -704,6 +712,13 @@ namespace HO偏差
                         E += -(pqw[i] * Math.Log(pq1[i]));
                         grad_pq1[i] = -(pqw[i] / pq1[i]);
                     }
+                }
+                if (E < minE)
+                {
+                    minE_t = t;
+                    Array.Copy(ee, ee2, CNT);
+                    Array.Copy(dd, dd2, CNT);
+                    minE = E;
                 }
 
                 // 求对各个参数的梯度
@@ -778,12 +793,19 @@ namespace HO偏差
                     reach_count++;
                     if (reach_count > 3)
                     {
-                        //double[] dpq = new double[pqw.Length];
-                        //for (int i = 0; i < dpq.Length; i++) dpq[i] = Math.Log(pqw[i] / pq1[i]);
-                        //double[] dp1 = new double[ph1.Length];
-                        //for (int i = 0; i < dp1.Length; i++) dp1[i] = Math.Log(ph1[i] / p1[i]);
+                        double[] dpq = new double[pqw.Length];
+                        for (int i = 0; i < dpq.Length; i++) dpq[i] = Math.Log(pqw[i] / pq1[i]);
+                        double[] dp1 = new double[ph1.Length];
+                        for (int i = 0; i < dp1.Length; i++) dp1[i] = Math.Log(ph1[i] / p1[i]);
                         break;
                     }
+                }
+                else if (t - minE_t > 20)
+                {
+                    Array.Copy(ee2, ee, CNT);
+                    Array.Copy(dd2, dd, CNT);
+                    lastE = minE;
+                    break;
                 }
                 else
                 {
