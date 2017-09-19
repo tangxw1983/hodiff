@@ -23,9 +23,12 @@ namespace HO偏差
             if (x < MIN_EXP_VALUE) return 0;
 
             double r = Math.Round(x, PRECISION);
-            if (!_cached_exp_result.ContainsKey(r))
+            lock (_cached_exp_result)
             {
-                _cached_exp_result[r] = Math.Exp(r);
+                if (!_cached_exp_result.ContainsKey(r))
+                {
+                    _cached_exp_result[r] = Math.Exp(r);
+                }
             }
             return _cached_exp_result[r];
         }
@@ -48,12 +51,15 @@ namespace HO偏差
             else
             {
                 double r = Math.Round(x, PRECISION);
-                if (!_cached_gauss_result.ContainsKey(r))
+                lock(_cached_gauss_result)
                 {
-                    _cached_gauss_result[r] = Math.Round(0.5 - common.Math.Calculus.integrate(new common.Math.Calculus.Func(delegate(double y)
+                    if (!_cached_gauss_result.ContainsKey(r))
                     {
-                        return exp(-y * y / 2) / SQRT_2_PI;
-                    }), 0, r, Math.Pow(10, -PRECISION)), PRECISION);
+                        _cached_gauss_result[r] = Math.Round(0.5 - common.Math.Calculus.integrate(new common.Math.Calculus.Func(delegate(double y)
+                        {
+                            return exp(-y * y / 2) / SQRT_2_PI;
+                        }), 0, r, Math.Pow(10, -PRECISION)), PRECISION);
+                    }
                 }
                 return _cached_gauss_result[r];
             }
@@ -246,7 +252,7 @@ namespace HO偏差
         {
             int CNT = ee.Length;
             int PLC_CNT = 3;
-            if (CNT <= 6) PLC_CNT = 2;
+            if (CNT <= 7) PLC_CNT = 2;
 
             p1 = new double[CNT];
             p3 = new double[CNT];
@@ -279,7 +285,7 @@ namespace HO偏差
         {
             int CNT = ee.Length;
             int PLC_CNT = 3;
-            if (CNT <= 6) PLC_CNT = 2;
+            if (CNT <= 7) PLC_CNT = 2;
 
             p1 = new double[CNT];
             p3 = new double[CNT];
@@ -565,7 +571,7 @@ namespace HO偏差
         {
             int CNT = table.Count;
             int PLC_CNT = 3;
-            if (CNT <= 6) PLC_CNT = 2;
+            if (CNT <= 7) PLC_CNT = 2;
             
             double[] s3 = table.SpPlc;
 
@@ -627,7 +633,7 @@ namespace HO偏差
 
             int CNT = table.Count;
             int PLC_CNT = 3;
-            if (CNT <= 6) PLC_CNT = 2;
+            if (CNT <= 7) PLC_CNT = 2;
 
             // 计算QP的投注比例
             // 修正发现几个错误引用了其他计算的变量 2017-09-17
@@ -644,9 +650,9 @@ namespace HO偏差
                     // 计算QP赔付率
                     IOrderedEnumerable<double> sorted_sqp = sqp.OrderBy(x => x);
                     double oqp3 = sorted_sqp.Skip(QP_CNT - 1).First();
-                    double aqp = QP_CNT * (oqp3 - 1) / (QP_CNT * (oqp3 - 1) + 1) * sorted_sqp.Take(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1)));
+                    double aqp = QP_CNT == 1 ? 0 : QP_CNT * (oqp3 - 1) / (QP_CNT * (oqp3 - 1) + 1) * sorted_sqp.Take(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1)));
                     double bqp = sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1));
-                    double rqp = (aqp + 1) / (bqp + bqp);
+                    double rqp = (aqp + 1) / (aqp + bqp);
 
                     // 计算投注比例
                     double pqp3 = (1 - rqp) / ((sorted_sqp.Skip(QP_CNT - 1).Sum(x => 1 / (QP_CNT * (x - 1) + 1)) - 1) * (QP_CNT * (oqp3 - 1) + 1));

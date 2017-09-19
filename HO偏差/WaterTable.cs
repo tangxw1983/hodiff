@@ -196,6 +196,29 @@ namespace HO偏差
         private Dictionary<string, WaterQn> _qp_bet_waters;
         private Dictionary<string, WaterQn> _qp_eat_waters;
 
+        public void Clear()
+        {
+            _wp_bet_waters.Clear();
+            _wp_eat_waters.Clear();
+            _qn_bet_waters.Clear();
+            _qn_eat_waters.Clear();
+            _qp_bet_waters.Clear();
+            _qp_eat_waters.Clear();
+        }
+
+        public bool IsEmpty
+        {
+            get
+            {
+                return _wp_bet_waters.Count == 0 &&
+                    _wp_eat_waters.Count == 0 &&
+                    _qn_bet_waters.Count == 0 &&
+                    _qn_eat_waters.Count == 0 &&
+                    _qp_bet_waters.Count == 0 &&
+                    _qp_eat_waters.Count == 0;
+            }
+        }
+
         public void FixWaterType()
         {
             if (_wp_eat_waters != null)

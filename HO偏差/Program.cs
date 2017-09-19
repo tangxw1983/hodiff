@@ -18,7 +18,7 @@ namespace HO偏差
 
             //RaceData test = RaceData.Load("sp-2017-03-19-1-1.dat");
 
-            Application.Run(new FormTestBet());
+            Application.Run(new FormBet());
         }
     }
 }
