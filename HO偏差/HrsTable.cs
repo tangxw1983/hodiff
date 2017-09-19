@@ -34,10 +34,16 @@ namespace HO偏差
     [Serializable()]
     class HrsTable : List<Hrs>
     {
+        public HrsTable() : base()
+        {
+            this.PLC_SPLIT_POS = 6;
+        }
+
         private Comb2Table _sp_q = null;
         private Comb2Table _sp_qp = null;
 
         public double E { get; set; }
+        public int PLC_SPLIT_POS { get; set; }
 
         public Hrs this[string no]
         {

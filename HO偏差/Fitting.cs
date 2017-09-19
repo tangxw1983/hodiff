@@ -248,11 +248,9 @@ namespace HO偏差
             }
         }
 
-        public static void calcProbility(double[] ee, double[] dd, out double[] p1, out double[] p3)
+        public static void calcProbility(double[] ee, double[] dd, int PLC_CNT, out double[] p1, out double[] p3)
         {
             int CNT = ee.Length;
-            int PLC_CNT = 3;
-            if (CNT <= 7) PLC_CNT = 2;
 
             p1 = new double[CNT];
             p3 = new double[CNT];
@@ -281,11 +279,9 @@ namespace HO偏差
             }
         }
 
-        public static void calcProbility(double[] ee, double[] dd, out double[] p1, out double[] p3, out double[] pq_win, out double[] pq_plc)
+        public static void calcProbility(double[] ee, double[] dd, int PLC_CNT, out double[] p1, out double[] p3, out double[] pq_win, out double[] pq_plc)
         {
             int CNT = ee.Length;
-            int PLC_CNT = 3;
-            if (CNT <= 7) PLC_CNT = 2;
 
             p1 = new double[CNT];
             p3 = new double[CNT];
@@ -526,12 +522,16 @@ namespace HO偏差
 
         public static void calcProbility(HrsTable table, out double[] p1, out double[] p3, out double[] pq_win, out double[] pq_plc)
         {
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
+
             double[] ee = table.Select(x => x.Mean).ToArray();
             double[] dd = table.Select(x => x.Var).ToArray();
 
             if ((table.HasSpQ && table.SpQ.Count > 0) || (table.HasSpQp && table.SpQp.Count > 0))
             {
-                calcProbility(ee, dd, out p1, out p3, out pq_win, out pq_plc);
+                calcProbility(ee, dd, PLC_CNT, out p1, out p3, out pq_win, out pq_plc);
 
                 if (!table.HasSpQ || table.SpQ.Count == 0)
                 {
@@ -544,7 +544,7 @@ namespace HO偏差
             }
             else
             {
-                calcProbility(ee, dd, out p1, out p3);
+                calcProbility(ee, dd, PLC_CNT, out p1, out p3);
                 pq_win = null;
                 pq_plc = null;
             }
@@ -571,7 +571,7 @@ namespace HO偏差
         {
             int CNT = table.Count;
             int PLC_CNT = 3;
-            if (CNT <= 7) PLC_CNT = 2;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
             
             double[] s3 = table.SpPlc;
 
@@ -633,7 +633,7 @@ namespace HO偏差
 
             int CNT = table.Count;
             int PLC_CNT = 3;
-            if (CNT <= 7) PLC_CNT = 2;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
 
             // 计算QP的投注比例
             // 修正发现几个错误引用了其他计算的变量 2017-09-17

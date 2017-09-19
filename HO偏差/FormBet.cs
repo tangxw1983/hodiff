@@ -33,9 +33,10 @@ namespace HO偏差
                 conn.Open();
 
                 string sql = @"
-SELECT a.*, b.`id` card_id, b.tote_type, c.* FROM ct_race a
+SELECT a.*, b.`id` card_id, b.tote_type, c.country, c.city, d.* FROM ct_race a
 INNER JOIN ct_card b ON b.`tournament_id` = a.`tournament_id`
 INNER JOIN ct_tournament_loc c on c.loc_id = a.race_loc
+INNER JOIN sg_odds_deviation_setting d on d.loc_id = a.race_loc
 WHERE a.time_text IS NOT NULL
 AND a.race_date = ?race_date";
 
@@ -71,6 +72,15 @@ AND a.race_date = ?race_date";
                                 rh.CardID = (ulong)dr["card_id"];
                                 rh.RaceNo = (int)dr["race_no"];
                                 rh.RaceName = string.Format("({0}){1}-{2}/{3}", dr["country"], dr["city"], dr["race_no"], dr["tote_type"]);
+                                rh.PLC_SPLIT_POS = (int)dr["data_plc_split_pos"];
+                                rh.MIN_R = (double)dr["risk_min_r"];
+                                rh.T = (double)dr["risk_total_bet"];
+                                rh.LOSS_RATE_COEFFICIENT = (double)dr["risk_loss_rate_coefficient"];
+                                rh.WP_STEP = (double)dr["order_wp_step"];
+                                rh.QN_STEP = (double)dr["order_qn_step"];
+                                rh.LIMIT_SCALE = (double)dr["data_limit_scale"];
+                                rh.FitTimeInAdvance = (int)dr["strategy_fit_time_in_advance"];
+                                rh.BetTimeInAdvance = (int)dr["strategy_bet_time_in_advance"];
                                 rh.startDaemon();
                                 rh.Process += rh_Process;
                                 _handlers.Add(rh);
@@ -164,7 +174,8 @@ AND a.race_date = ?race_date";
             /// 预计开赛时间前多少秒开始下单
             /// </summary>
             public int BetTimeInAdvance { get; set; }
-            
+            public int PLC_SPLIT_POS { get; set; }
+
             private HrsTable _latest_odds;
             private HrsTable _fitted_odds;
             private WaterTable _latest_waters = new WaterTable();
@@ -183,12 +194,12 @@ AND a.race_date = ?race_date";
             private Dictionary<string, double> _bet_amount_qp = new Dictionary<string, double>();
 
             private const double E_THRESHOLD_SCALE = 1.1;
-            private const double MIN_R = 1.2;
-            private const double T = 1000;
-            private const double LOSS_RATE_COEFFICIENT = 5.43;
-            private const double WP_STEP = 5;
-            private const double QN_STEP = 10;
-            private const double LIMIT_SCALE = 10;
+            public double MIN_R { get; set; }
+            public double T { get; set; }
+            public double LOSS_RATE_COEFFICIENT { get; set; }
+            public double WP_STEP { get; set; }
+            public double QN_STEP { get; set; }
+            public double LIMIT_SCALE { get; set; }
             private const int MODEL = 103;
 
             private static DateTime UNIXTIME_BASE = new DateTime(1970, 1, 1, 8, 0, 0);
@@ -244,7 +255,7 @@ AND a.race_date = ?race_date";
                         }
                         finally
                         {
-                            lock(this)
+                            lock (this)
                             {
                                 _tBet = null;
                             }
@@ -262,7 +273,7 @@ AND a.race_date = ?race_date";
 
             public void Stop()
             {
-                lock(this)
+                lock (this)
                 {
                     if (_tFix != null) _tFix.Abort();
                     if (_tBet != null && !object.Equals(Thread.CurrentThread, _tBet)) _tBet.Abort();
@@ -336,7 +347,7 @@ AND a.race_date = ?race_date";
                 }
                 finally
                 {
-                    lock(this)
+                    lock (this)
                     {
                         _tDaemon = null;
                     }
@@ -377,7 +388,7 @@ AND a.race_date = ?race_date";
                 }
                 finally
                 {
-                    lock(this)
+                    lock (this)
                     {
                         _tFix = null;
                     }
@@ -454,9 +465,9 @@ AND a.race_date = ?race_date";
                             {
                                 WaterWPList vlist = _latest_waters.GetWpEatWater(h.No).GetValuableWater(MIN_R, sp_w_min, p1[i], sp_p_min, p3[i]);
                                 double bet_amount_win = 0, bet_amount_plc = 0;
-                                if (_bet_amount_win.ContainsKey(h.No)) 
+                                if (_bet_amount_win.ContainsKey(h.No))
                                     bet_amount_win = _bet_amount_win[h.No];
-                                if (_bet_amount_plc.ContainsKey(h.No)) 
+                                if (_bet_amount_plc.ContainsKey(h.No))
                                     bet_amount_plc = _bet_amount_plc[h.No];
                                 bool full_win = false, full_plc = false;
                                 foreach (WaterWPItem w in vlist.OrderBy(x => x.Percent))
@@ -657,7 +668,7 @@ AND a.race_date = ?race_date";
 
                             if (pq_win != null
                                 && rqn > 0.8 && rqn < 1)   // 0.8-1范围之外的赔付率认为是错误数据
-                            {                              
+                            {
                                 double sp_min, sp_max;
                                 lock (this)
                                 {
@@ -954,7 +965,7 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=
                         return false;
                     }
 
-                    lock(this)
+                    lock (this)
                     {
                         if (_fitted_odds != null)
                         {
@@ -1001,7 +1012,7 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=
                 url = string.Format("http://120.24.210.35:3000/data/market/get_tote_wp_latest_raw_info?race_id={0}&card_id={1}", RaceID, CardID);
                 rawInfo = this.getRawInfoByAPI(url);
 
-                HrsTable table = new HrsTable();
+                HrsTable table = new HrsTable() { PLC_SPLIT_POS = this.PLC_SPLIT_POS };
                 if (rawInfo != null)
                 {
                     JArray ja = (JArray)JsonConvert.DeserializeObject(rawInfo);
