@@ -12,19 +12,26 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		LongTest|Any CPU = LongTest|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}.LongTest|Any CPU.ActiveCfg = LongTest|Any CPU
+		{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}.LongTest|Any CPU.Build.0 = LongTest|Any CPU
 		{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{52591EBB-281B-4E01-ABAC-8A02CEE6B5C9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{033B816F-BF82-4A56-87A5-13DA07A92C50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{033B816F-BF82-4A56-87A5-13DA07A92C50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{033B816F-BF82-4A56-87A5-13DA07A92C50}.LongTest|Any CPU.ActiveCfg = LongTest|Any CPU
+		{033B816F-BF82-4A56-87A5-13DA07A92C50}.LongTest|Any CPU.Build.0 = LongTest|Any CPU
 		{033B816F-BF82-4A56-87A5-13DA07A92C50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{033B816F-BF82-4A56-87A5-13DA07A92C50}.Release|Any CPU.Build.0 = Release|Any CPU
 		{411E7A67-A5D5-47C3-BD8F-70C22DCBC11E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{411E7A67-A5D5-47C3-BD8F-70C22DCBC11E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{411E7A67-A5D5-47C3-BD8F-70C22DCBC11E}.LongTest|Any CPU.ActiveCfg = LongTest|Any CPU
+		{411E7A67-A5D5-47C3-BD8F-70C22DCBC11E}.LongTest|Any CPU.Build.0 = LongTest|Any CPU
 		{411E7A67-A5D5-47C3-BD8F-70C22DCBC11E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{411E7A67-A5D5-47C3-BD8F-70C22DCBC11E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

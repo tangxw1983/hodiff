@@ -17,6 +17,8 @@ namespace common.Math
         private int _n;
         private int _m;
         private long _length;
+        public int N { get { return _n; } }
+        public int M { get { return _m; } }
         public long Length { get { return _length; } }
 
         public static long Count(int n, int m)
