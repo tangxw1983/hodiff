@@ -601,6 +601,58 @@ namespace HO偏差
             return ph3;
         }
 
+
+        public static double[] calcBetRateForPlcWithStyle2(HrsTable table, ref double r)
+        {
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
+
+            double[] s3 = table.SpPlc;
+
+            double[] ph3 = new double[CNT];
+            if (s3.Where(x => x == 1).Count() == 0)
+            {
+                // 没有有强制设为1的赔率
+                r = PLC_CNT / s3.Sum(x => 1 / x);  // 赔付率
+
+                for (int i = 0; i < CNT; i++)
+                {
+                    ph3[i] = r / s3[i] / PLC_CNT;
+                }                
+            }
+            else
+            {
+                // 否则用预计赔付率
+                List<int> od_1_indices = new List<int>();
+                double other_p_sum = 0;
+                for (int i = 0; i < CNT; i++)
+                {
+                    if (s3[i] > 1)
+                    {
+                        ph3[i] = r / s3[i] / PLC_CNT;
+                        other_p_sum += ph3[i];
+                    }
+                    else
+                    {
+                        od_1_indices.Add(i);
+                    }
+                }
+                foreach (int i in od_1_indices)
+                {
+                    ph3[i] = (PLC_CNT - other_p_sum) / od_1_indices.Count;
+                    if (r / ph3[i] / PLC_CNT > 1.1)
+                    {
+                        // 验证
+                        r = 0;      // 计算偏差过大
+                        break;  
+                    }
+                }
+            }
+
+            return ph3;
+        }
+
         public static double[] calcBetRateForQn(HrsTable table, out double r)
         {
             r = 0;
@@ -673,6 +725,167 @@ namespace HO偏差
             }
 
             return pqp;
+        }
+
+        public static double[] calcBetRateForQpWithStyle2(HrsTable table, ref double r)
+        {
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
+
+            double[] pqp = null;
+            if (table.HasSpQp)
+            {
+                if (table.SpQp.Count > 0)
+                {
+                    double[] sqp = table.SpQp.Sp;
+                    pqp = new double[sqp.Length];
+
+                    int QP_CNT = (int)(new common.Math.Combination(PLC_CNT, 2)).Length;
+
+                    if (sqp.Where(x => x == 1).Count() == 0)
+                    {
+                        // 没有有强制设为1的赔率
+                        r = QP_CNT / sqp.Sum(x => 1 / x);  // 赔付率
+
+                        for (int i = 0; i < sqp.Length; i++)
+                        {
+                            pqp[i] = r / sqp[i] / QP_CNT;
+                        }
+                    }
+                    else
+                    {
+                        // 否则用预计赔付率
+                        List<int> od_1_indices = new List<int>();
+                        double other_p_sum = 0;
+                        for (int i = 0; i < CNT; i++)
+                        {
+                            if (sqp[i] > 1)
+                            {
+                                pqp[i] = r / sqp[i] / QP_CNT;
+                                other_p_sum += pqp[i];
+                            }
+                            else
+                            {
+                                od_1_indices.Add(i);
+                            }
+                        }
+                        foreach (int i in od_1_indices)
+                        {
+                            pqp[i] = (QP_CNT - other_p_sum) / od_1_indices.Count;
+                            if (r / pqp[i] / QP_CNT > 1.1)
+                            {
+                                // 验证
+                                r = 0;      // 计算偏差过大
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return pqp;
+        }
+
+        public static double[] calcMinOddsForPlc(HrsTable table, double[] betRate, double r)
+        {
+            if (betRate == null) return null;
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
+            if (betRate.Length != CNT) return null;
+
+            IOrderedEnumerable<double> sorted_rate = betRate.OrderBy(x => x);
+            double split_rate = sorted_rate.Skip(PLC_CNT - 1).First();
+            double sum_top = sorted_rate.Take(PLC_CNT - 1).Sum();
+            return betRate.Select(x => 1 + (r - sum_top - (x < split_rate ? split_rate : x)) / PLC_CNT / x).ToArray();
+        }
+
+        public static double[] calcMaxOddsForPlc(HrsTable table, double[] betRate, double r)
+        {
+            if (betRate == null) return null;
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
+            if (betRate.Length != CNT) return null;
+
+            IOrderedEnumerable<double> sorted_rate = betRate.OrderByDescending(x => x);
+            double split_rate = sorted_rate.Skip(PLC_CNT - 1).First();
+            double sum_top = sorted_rate.Take(PLC_CNT - 1).Sum();
+            return betRate.Select(x => 1 + (r - sum_top - (x > split_rate ? split_rate : x)) / PLC_CNT / x).ToArray();
+        }
+
+        /// <summary>
+        /// 获得Qp相关的组合，只针对PLC_CNT=3的情况
+        /// </summary>
+        /// <param name="comb"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private static int[] getQpRelationIndice(common.Math.Combination comb, int index)
+        {
+            if (comb.M != 2) return null;
+            int[] c = comb.Combine(index);
+            List<int> ret = new List<int>();
+            ret.Add(index);
+
+            for (int i = 0; i < comb.N; i++)
+            {
+                if (Array.IndexOf(c, i) == -1)
+                {
+                    ret.Add(comb.Index(new int[] { i, c[0] }));
+                    ret.Add(comb.Index(new int[] { i, c[1] }));
+                }
+            }
+            return ret.ToArray();
+        }
+
+        public static double[][] calcMinMaxOddsForQp(HrsTable table, double[] betRate, double r)
+        {
+            if (betRate == null) return null;
+            int CNT = table.Count;
+            int PLC_CNT = 3;
+            if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
+
+            common.Math.Combination comb = new common.Math.Combination(CNT, 2);
+            if (betRate.Length != comb.Length) return null;
+
+            
+            if (PLC_CNT == 2)
+            {
+                double[] odds = betRate.Select(x => r / x).ToArray();
+                return new double[][] { odds, odds };
+            }
+            else
+            {
+                double[] odds_min = new double[betRate.Length];
+                double[] odds_max = new double[betRate.Length];
+                for (int i = 0; i < betRate.Length; i++)
+                {
+                    //int[] rel_indices = getQpRelationIndice(comb, i);
+                    //double[] rel_rates = new double[rel_indices.Length];
+                    //for (int j = 0; j < rel_indices.Length; j++) rel_rates[j] = betRate[rel_indices[j]];
+                    //IOrderedEnumerable<double> sorted_rate = rel_rates.OrderByDescending(x => x);
+
+                    double br0 = betRate[i];
+                    int[] c = comb.Combine(i);
+                    double min = double.MaxValue, max = double.MinValue;
+                    for (int j = 0; j < CNT; j++)
+                    {
+                        if (Array.IndexOf(c, j) == -1)
+                        {
+                            double br1 = betRate[comb.Index(new int[] { j, c[0] })];
+                            double br2 = betRate[comb.Index(new int[] { j, c[1] })];
+
+                            double od = (r - br1 - br2 - br0) / 3 / br0;
+                            if (od < min) min = od;
+                            if (od > max) max = od;
+                        }
+                    }
+                    odds_min[i] = min;
+                    odds_max[i] = max;
+                }
+                return new double[][] { odds_min, odds_max };
+            }
         }
 
         public static double fit(HrsTable table, double epsilon)

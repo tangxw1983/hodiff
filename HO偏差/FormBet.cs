@@ -81,6 +81,8 @@ AND a.race_date = ?race_date";
                                 rh.LIMIT_SCALE = (double)((decimal)dr["data_limit_scale"]);
                                 rh.FitTimeInAdvance = (int)dr["strategy_fit_time_in_advance"];
                                 rh.BetTimeInAdvance = (int)dr["strategy_bet_time_in_advance"];
+                                rh.R_PLC = (double)((decimal)dr["data_r_plc"]);
+                                rh.R_QP = (double)((decimal)dr["data_r_qp"]);
                                 rh.startDaemon();
                                 rh.Process += rh_Process;
                                 _handlers.Add(rh);
@@ -89,17 +91,31 @@ AND a.race_date = ?race_date";
                     }
                 }
             }
+
+            this.Log("main", "0", string.Format("加载获得{0}个比赛", _handlers.Count));
         }
 
         void rh_Process(FormBet.RaceHandler sender, FormBet.RaceProcessEventArgs e)
         {
+            this.Log(sender.RaceName, ((int)sender.StartTime.Subtract(DateTime.Now).TotalSeconds).ToString(), e.Description);
+        }
+
+        void Log(string source, string countdown, string description)
+        {
+            using (System.IO.FileStream fs = new System.IO.FileStream(string.Format("{0:yyyy-MM-dd}.log", DateTime.Now), System.IO.FileMode.Append))
+            {
+                using (System.IO.StreamWriter sw = new System.IO.StreamWriter(fs))
+                {
+                    sw.WriteLine("{0:HH:mm:ss}:{1},{2},{3}", DateTime.Now, source, countdown, description);
+                }
+            }
             this.Invoke(new MethodInvoker(delegate
             {
                 lvwLog.SuspendLayout();
                 ListViewItem lvi = lvwLog.Items.Add(string.Format("{0:HH:mm:ss}", DateTime.Now));
-                lvi.SubItems.Add(sender.RaceName);
-                lvi.SubItems.Add(((int)sender.StartTime.Subtract(DateTime.Now).TotalSeconds).ToString());
-                lvi.SubItems.Add(e.Description);
+                lvi.SubItems.Add(source);
+                lvi.SubItems.Add(countdown);
+                lvi.SubItems.Add(description);
                 lvwLog.EnsureVisible(lvi.Index);
                 lvwLog.ResumeLayout();
             }));
@@ -175,6 +191,14 @@ AND a.race_date = ?race_date";
             /// </summary>
             public int BetTimeInAdvance { get; set; }
             public int PLC_SPLIT_POS { get; set; }
+            /// <summary>
+            /// PLC的预计赔付
+            /// </summary>
+            public double R_PLC { get; set; }
+            /// <summary>
+            /// QP的预计赔付
+            /// </summary>
+            public double R_QP { get; set; }
 
             private HrsTable _latest_odds;
             private HrsTable _fitted_odds;
@@ -200,7 +224,7 @@ AND a.race_date = ?race_date";
             public double WP_STEP { get; set; }
             public double QN_STEP { get; set; }
             public double LIMIT_SCALE { get; set; }
-            private const int MODEL = 103;
+            private const int MODEL = 104;
 
             private static DateTime UNIXTIME_BASE = new DateTime(1970, 1, 1, 8, 0, 0);
 
@@ -419,11 +443,11 @@ AND a.race_date = ?race_date";
 
                         // 计算预计概率与当前赔率下下注比例的交叉熵
                         double[] q1, q3, qqn, qqp;
-                        double r1, r3, rqn, rqp;
+                        double r1, r3 = R_PLC, rqn, rqp = R_QP;
                         q1 = Fitting.calcBetRateForWin(latestOdds, out r1);
-                        q3 = Fitting.calcBetRateForPlc(latestOdds, out r3);
+                        q3 = Fitting.calcBetRateForPlcWithStyle2(latestOdds, ref r3);
                         qqn = Fitting.calcBetRateForQn(latestOdds, out rqn);
-                        qqp = Fitting.calcBetRateForQp(latestOdds, out rqp);
+                        qqp = Fitting.calcBetRateForQpWithStyle2(latestOdds, ref rqp);
                         double E = cross_entropy(p1, q1) + cross_entropy(pq_win, qqn);
                         if (r1 < 0.8 || r1 >= 1) this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("赔付率错误：WIN/{0:0.00000}", r1) });
                         if (r3 < 0.8 || r3 >= 1) this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("赔付率错误：PLC/{0:0.00000}", r3) });
@@ -438,6 +462,19 @@ AND a.race_date = ?race_date";
                             return;
                         }
 
+                        // 计算FittedOdds的PLC/QP下注比率与赔付
+                        double[] b3_fitted, bqp_fitted;
+                        double r3_fitted = R_PLC, rqp_fitted = R_QP;
+                        b3_fitted = Fitting.calcBetRateForPlcWithStyle2(fittedOdds, ref r3_fitted);
+                        bqp_fitted = Fitting.calcBetRateForQpWithStyle2(fittedOdds, ref rqp_fitted);
+
+                        #region W/P
+
+                        // 计算PLC最大与最小的Odds
+                        double[] plc_min_odds_latest = Fitting.calcMinOddsForPlc(latestOdds, q3, r3);
+                        double[] plc_max_odds_latest = Fitting.calcMaxOddsForPlc(latestOdds, q3, r3);
+                        double[] plc_min_odds_fitted = Fitting.calcMinOddsForPlc(fittedOdds, b3_fitted, r3_fitted);
+                        double[] plc_max_odds_fitted = Fitting.calcMaxOddsForPlc(fittedOdds, b3_fitted, r3_fitted);
                         for (int i = 0; i < latestOdds.Count; i++)
                         {
                             Hrs h = latestOdds[i];
@@ -445,20 +482,20 @@ AND a.race_date = ?race_date";
                             double sp_w_min, sp_w_max, sp_p_min, sp_p_max;
                             sp_w_min = Math.Min(h.Win, fittedOdds[i].Win);
                             sp_w_max = Math.Max(h.Win, fittedOdds[i].Win);
-                            sp_p_min = Math.Min(h.Plc, fittedOdds[i].Plc);
-                            sp_p_max = Math.Max(h.Plc, fittedOdds[i].Plc);
+                            sp_p_min = Math.Min(plc_min_odds_latest[i], plc_min_odds_fitted[i]);
+                            sp_p_max = Math.Max(plc_max_odds_latest[i], plc_max_odds_fitted[i]);
 
                             if (r1 < 0.8 || r1 >= 1)
                             {
                                 // 错误数据
                                 sp_w_min = 0;
-                                sp_w_max = 0;
+                                sp_w_max = double.MaxValue;
                             }
                             if (r3 < 0.8 || r3 >= 1)
                             {
                                 // 错误数据
                                 sp_p_min = 0;
-                                sp_p_max = 0;
+                                sp_p_max = double.MaxValue;
                             }
 
                             // For Bet
@@ -658,14 +695,19 @@ AND a.race_date = ?race_date";
                             }
 
                         }
+                        #endregion
 
                         common.Math.Combination comb2 = new common.Math.Combination(latestOdds.Count, 2);
                         int[][] combinations = comb2.GetCombinations();
+                        // 计算QP最大与最小的Odds
+                        double[][] qp_minmax_odds_latest = Fitting.calcMinMaxOddsForQp(latestOdds, qqp, rqp);
+                        double[][] qp_minmax_odds_fitted = Fitting.calcMinMaxOddsForQp(latestOdds, bqp_fitted, rqp_fitted);
                         for (int i = 0; i < combinations.Length; i++)
                         {
                             int[] c = combinations[i];
                             string horseNo = string.Format("{0}-{1}", latestOdds[c[0]].No, latestOdds[c[1]].No);
 
+                            #region Q
                             if (pq_win != null
                                 && rqn > 0.8 && rqn < 1)   // 0.8-1范围之外的赔付率认为是错误数据
                             {
@@ -758,12 +800,14 @@ AND a.race_date = ?race_date";
                                     _bet_amount_qn[horseNo] = -eat_amount;
                                 }
                             }
+                            #endregion
 
+                            #region QP
                             if (pq_plc != null
                                 && rqp > 0.8 && rqp < 1)
                             {
-                                double sp_min = Math.Min(latestOdds.SpQp[horseNo], fittedOdds.SpQp[horseNo]);
-                                double sp_max = Math.Max(latestOdds.SpQp[horseNo], fittedOdds.SpQp[horseNo]);
+                                double sp_min = Math.Min(qp_minmax_odds_latest[0][i], qp_minmax_odds_fitted[0][i]);
+                                double sp_max = Math.Max(qp_minmax_odds_latest[1][i], qp_minmax_odds_fitted[1][i]);
 
                                 // For Bet
                                 {
@@ -847,6 +891,7 @@ AND a.race_date = ?race_date";
                                     _bet_amount_qp[horseNo] = -eat_amount;
                                 }
                             }
+                            #endregion
                         }
 
                         this.OnProcess(new RaceProcessEventArgs() { Description = "下单完成" });
