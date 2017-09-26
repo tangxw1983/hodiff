@@ -17,24 +17,64 @@ namespace HO偏差
         private static double SQRT_2_PI = Math.Sqrt(2 * Math.PI);
         private static double MIN_EXP_VALUE = -PRECISION * Math.Log(10);
 
-        private static Dictionary<double, double> _cached_exp_result = new Dictionary<double, double>();
-        private static double exp(double x)
-        {
-            if (x < MIN_EXP_VALUE) return 0;
+        private static double[,] _cached_exp_result = new double[10,30000];
+        private static double[] _cached_exp_split = new double[] {
+            Math.Log(0.9),
+            Math.Log(0.8),
+            Math.Log(0.7),
+            Math.Log(0.6),
+            Math.Log(0.5),
+            Math.Log(0.4),
+            Math.Log(0.3),
+            Math.Log(0.2),
+            Math.Log(0.1),
+            MIN_EXP_VALUE
+        };
 
-            double r = Math.Round(x, PRECISION);
-            lock (_cached_exp_result)
+        public static double exp(double x)
+        {
+            if (x > 0) return Math.Exp(x);
+            double ls = 0;
+            for (int i = 0; i < _cached_exp_split.Length; i++)
             {
-                if (!_cached_exp_result.ContainsKey(r))
+                if (x > _cached_exp_split[i])
                 {
-                    _cached_exp_result[r] = Math.Exp(r);
+                    double len = ls - _cached_exp_split[i];
+
+                    int r = (int)((ls - x) * 30000 / len);
+                    lock (_cached_exp_result)
+                    {
+                        if (_cached_exp_result[i, r] == 0)
+                        {
+                            _cached_exp_result[i, r] = Math.Exp(ls - len * r / 30000);
+                        }
+                    }
+                    return _cached_exp_result[i, r];
+                }
+                else
+                {
+                    ls = _cached_exp_split[i];
                 }
             }
-            return _cached_exp_result[r];
+
+            return 0;
         }
 
-        private static Dictionary<double, double> _cached_gauss_result = new Dictionary<double, double>();
-        private static double gauss(double e, double d, double x)   // 计算P(v>x)
+        private static double[,] _cached_gauss_result = new double[10, 30000];
+        private static double[] _cached_gauss_split = new double[] {
+            0.12565, //    0.45
+            0.25334, //    0.4
+            0.38531, //    0.35
+            0.52439, //    0.3
+            0.67448, //    0.25
+            0.84161, //	   0.2
+            1.03641, //    0.15
+            1.28152, //    0.1
+            1.6448, //     0.05
+            4.25685, //    0
+
+        };
+        public static double gauss(double e, double d, double x)   // 计算P(v>x)
         {
             if (e != 0 || d != 1)
             {
@@ -50,18 +90,33 @@ namespace HO偏差
             }
             else
             {
-                double r = Math.Round(x, PRECISION);
-                lock(_cached_gauss_result)
+                double ls = 0;
+                for (int i = 0; i < _cached_gauss_split.Length; i++)
                 {
-                    if (!_cached_gauss_result.ContainsKey(r))
+                    if (x < _cached_gauss_split[i])
                     {
-                        _cached_gauss_result[r] = Math.Round(0.5 - common.Math.Calculus.integrate(new common.Math.Calculus.Func(delegate(double y)
+                        double len = _cached_gauss_split[i] - ls;
+
+                        int r = (int)((x - ls) * 30000 / len);
+                        lock (_cached_gauss_result)
                         {
-                            return exp(-y * y / 2) / SQRT_2_PI;
-                        }), 0, r, Math.Pow(10, -PRECISION)), PRECISION);
+                            if (_cached_gauss_result[i, r] == 0)
+                            {
+                                _cached_gauss_result[i, r] = Math.Round(0.5 - common.Math.Calculus.integrate(new common.Math.Calculus.Func(delegate(double y)
+                                {
+                                    return exp(-y * y / 2) / SQRT_2_PI;
+                                }), 0, len * r / 30000 + ls, Math.Pow(10, -PRECISION)), PRECISION);
+                            }
+                        }
+                        return _cached_gauss_result[i, r];
+                    }
+                    else
+                    {
+                        ls = _cached_gauss_split[i];
                     }
                 }
-                return _cached_gauss_result[r];
+
+                return 0;
             }
         }
 
