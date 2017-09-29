@@ -275,7 +275,7 @@ AND a.race_date = ?race_date";
                         catch (ThreadAbortException) { }
                         catch (Exception ex)
                         {
-                            this.OnProcess(new RaceProcessEventArgs() { Description = "下单线程错误：" + ex.Message });
+                            this.OnProcess(new RaceProcessEventArgs() { Description = "下单线程错误：" + ex.ToString() });
                         }
                         finally
                         {
@@ -367,7 +367,7 @@ AND a.race_date = ?race_date";
                 }
                 catch (Exception ex)
                 {
-                    this.OnProcess(new RaceProcessEventArgs() { Description = "守护线程错误：" + ex.Message });
+                    this.OnProcess(new RaceProcessEventArgs() { Description = "守护线程错误：" + ex.ToString() });
                 }
                 finally
                 {
@@ -408,7 +408,7 @@ AND a.race_date = ?race_date";
                 catch (ThreadAbortException) { }
                 catch (Exception ex)
                 {
-                    this.OnProcess(new RaceProcessEventArgs() { Description = "拟合线程错误：" + ex.Message });
+                    this.OnProcess(new RaceProcessEventArgs() { Description = "拟合线程错误：" + ex.ToString() });
                 }
                 finally
                 {
