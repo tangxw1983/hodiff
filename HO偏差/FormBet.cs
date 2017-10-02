@@ -102,23 +102,26 @@ AND a.race_date = ?race_date";
 
         void Log(string source, string countdown, string description)
         {
-            using (System.IO.FileStream fs = new System.IO.FileStream(string.Format("{0:yyyy-MM-dd}.log", DateTime.Now), System.IO.FileMode.Append))
+            lock(this)
             {
-                using (System.IO.StreamWriter sw = new System.IO.StreamWriter(fs))
+                using (System.IO.FileStream fs = new System.IO.FileStream(string.Format("{0:yyyy-MM-dd}.log", DateTime.Now), System.IO.FileMode.Append))
                 {
-                    sw.WriteLine("{0:HH:mm:ss}:{1},{2},{3}", DateTime.Now, source, countdown, description);
+                    using (System.IO.StreamWriter sw = new System.IO.StreamWriter(fs))
+                    {
+                        sw.WriteLine("{0:HH:mm:ss}:{1},{2},{3}", DateTime.Now, source, countdown, description);
+                    }
                 }
+                this.Invoke(new MethodInvoker(delegate
+                {
+                    lvwLog.SuspendLayout();
+                    ListViewItem lvi = lvwLog.Items.Add(string.Format("{0:HH:mm:ss}", DateTime.Now));
+                    lvi.SubItems.Add(source);
+                    lvi.SubItems.Add(countdown);
+                    lvi.SubItems.Add(description);
+                    lvwLog.EnsureVisible(lvi.Index);
+                    lvwLog.ResumeLayout();
+                }));
             }
-            this.Invoke(new MethodInvoker(delegate
-            {
-                lvwLog.SuspendLayout();
-                ListViewItem lvi = lvwLog.Items.Add(string.Format("{0:HH:mm:ss}", DateTime.Now));
-                lvi.SubItems.Add(source);
-                lvi.SubItems.Add(countdown);
-                lvi.SubItems.Add(description);
-                lvwLog.EnsureVisible(lvi.Index);
-                lvwLog.ResumeLayout();
-            }));
         }
 
         class InvestRecordWp

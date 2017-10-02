@@ -1116,8 +1116,11 @@ namespace HO偏差
                     reach_count++;
                     if (reach_count > 3)
                     {
-                        double[] dpq = new double[pqw.Length];
-                        for (int i = 0; i < dpq.Length; i++) dpq[i] = Math.Log(pqw[i] / pq1[i]);
+                        if (pqw != null)
+                        {
+                            double[] dpq = new double[pqw.Length];
+                            for (int i = 0; i < dpq.Length; i++) dpq[i] = Math.Log(pqw[i] / pq1[i]);
+                        }
                         double[] dp1 = new double[ph1.Length];
                         for (int i = 0; i < dp1.Length; i++) dp1[i] = Math.Log(ph1[i] / p1[i]);
                         break;
