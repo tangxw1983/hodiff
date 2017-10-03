@@ -117,6 +117,10 @@ namespace HO偏差
         public double Percent { get; set; }
         public double Amount { get; set; }
         public double Limit { get; set; }
+
+        [NonSerialized]
+        private double _tradedAmount;
+        public double TradedAmount { get { return _tradedAmount; } set { _tradedAmount = value; } }
     }
 
     class WaterQnList : List<WaterQnItem>

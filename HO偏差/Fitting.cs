@@ -813,7 +813,7 @@ namespace HO偏差
                         // 否则用预计赔付率
                         List<int> od_1_indices = new List<int>();
                         double other_p_sum = 0;
-                        for (int i = 0; i < CNT; i++)
+                        for (int i = 0; i < sqp.Length; i++)
                         {
                             if (sqp[i] > 1)
                             {
@@ -828,7 +828,7 @@ namespace HO偏差
                         foreach (int i in od_1_indices)
                         {
                             pqp[i] = (QP_CNT - other_p_sum) / od_1_indices.Count;
-                            if (r / pqp[i] / QP_CNT > 1.1)
+                            if (pqp[i] > 1 || r / pqp[i] / QP_CNT > 1.1)
                             {
                                 // 验证
                                 r = 0;      // 计算偏差过大

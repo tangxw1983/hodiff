@@ -33,7 +33,7 @@ namespace HO偏差
                 conn.Open();
 
                 string sql = @"
-SELECT a.*, b.`id` card_id, b.tote_type, c.country, c.city, d.* FROM ct_race a
+SELECT a.*, b.`id` card_id, b.tote_type, b.card_char, c.country, c.city, d.* FROM ct_race a
 INNER JOIN ct_card b ON b.`tournament_id` = a.`tournament_id`
 INNER JOIN ct_tournament_loc c on c.loc_id = a.race_loc
 INNER JOIN sg_odds_deviation_setting d on d.loc_id = a.race_loc
@@ -70,6 +70,8 @@ AND a.race_date = ?race_date";
                                     continue;  // 十分钟之前开赛的忽略
                                 rh.RaceID = (ulong)dr["id"];
                                 rh.CardID = (ulong)dr["card_id"];
+                                rh.RaceDate = (string)dr["race_date"];
+                                rh.RaceType = (string)dr["race_loc"] + (string)dr["card_char"];
                                 rh.RaceNo = (int)dr["race_no"];
                                 rh.RaceName = string.Format("({0}){1}-{2}/{3}", dr["country"], dr["city"], dr["race_no"], dr["tote_type"]);
                                 rh.PLC_SPLIT_POS = (int)dr["data_plc_split_pos"];
@@ -102,7 +104,7 @@ AND a.race_date = ?race_date";
 
         void Log(string source, string countdown, string description)
         {
-            lock(this)
+            lock (this)
             {
                 using (System.IO.FileStream fs = new System.IO.FileStream(string.Format("{0:yyyy-MM-dd}.log", DateTime.Now), System.IO.FileMode.Append))
                 {
@@ -111,21 +113,22 @@ AND a.race_date = ?race_date";
                         sw.WriteLine("{0:HH:mm:ss}:{1},{2},{3}", DateTime.Now, source, countdown, description);
                     }
                 }
-                this.Invoke(new MethodInvoker(delegate
-                {
-                    lvwLog.SuspendLayout();
-                    ListViewItem lvi = lvwLog.Items.Add(string.Format("{0:HH:mm:ss}", DateTime.Now));
-                    lvi.SubItems.Add(source);
-                    lvi.SubItems.Add(countdown);
-                    lvi.SubItems.Add(description);
-                    lvwLog.EnsureVisible(lvi.Index);
-                    lvwLog.ResumeLayout();
-                }));
             }
+            this.Invoke(new MethodInvoker(delegate
+            {
+                lvwLog.SuspendLayout();
+                ListViewItem lvi = lvwLog.Items.Add(string.Format("{0:HH:mm:ss}", DateTime.Now));
+                lvi.SubItems.Add(source);
+                lvi.SubItems.Add(countdown);
+                lvi.SubItems.Add(description);
+                lvwLog.EnsureVisible(lvi.Index);
+                lvwLog.ResumeLayout();
+            }));
         }
 
         class InvestRecordWp
         {
+            public uint ID { get; set; }
             public long TimeKey { get; set; }
             public int Model { get; set; }
             public ulong CardID { get; set; }
@@ -144,10 +147,34 @@ AND a.race_date = ?race_date";
             public double FittingLoss { get; set; }
             public double CloseAmount { get; set; }
             public bool CloseFlag { get; set; }
+            public InvestRecordWp RefItem { get; set; }
+            public uint OrderId { get; set; }
+        }
+
+        class OrderWp
+        {
+            public OrderWp()
+            {
+                this.Records = new List<InvestRecordWp>();
+            }
+
+            public uint ID { get; set; }
+            public ulong CardID { get; set; }
+            public string RaceDate { get; set; }
+            public string RaceType { get; set; }
+            public int RaceNo { get; set; }
+            public string Direction { get; set; }
+            public string HorseNo { get; set; }
+            public double Percent { get; set; }
+            public double WinLimit { get; set; }
+            public double PlcLimit { get; set; }
+            public double Amount { get; set; }
+            public List<InvestRecordWp> Records { get; private set; }
         }
 
         class InvestRecordQn
         {
+            public uint ID { get; set; }
             public long TimeKey { get; set; }
             public int Model { get; set; }
             public ulong CardID { get; set; }
@@ -163,6 +190,29 @@ AND a.race_date = ?race_date";
             public double FittingLoss { get; set; }
             public double CloseAmount { get; set; }
             public bool CloseFlag { get; set; }
+            public InvestRecordQn RefItem { get; set; }
+            public uint OrderId { get; set; }
+        }
+
+        class OrderQn
+        {
+            public OrderQn()
+            {
+                this.Records = new List<InvestRecordQn>();
+            }
+
+            public uint ID { get; set; }
+            public ulong CardID { get; set; }
+            public string RaceDate { get; set; }
+            public string RaceType { get; set; }
+            public int RaceNo { get; set; }
+            public string Direction { get; set; }
+            public string Type { get; set; }
+            public string HorseNo { get; set; }
+            public double Percent { get; set; }
+            public double Limit { get; set; }
+            public double Amount { get; set; }
+            public List<InvestRecordQn> Records { get; private set; }
         }
 
         class RaceProcessEventArgs : EventArgs
@@ -182,6 +232,8 @@ AND a.race_date = ?race_date";
 
             public ulong RaceID { get; set; }
             public ulong CardID { get; set; }
+            public string RaceDate { get; set; }
+            public string RaceType { get; set; }
             public int RaceNo { get; set; }
             public DateTime StartTime { get; set; }
 
@@ -231,6 +283,9 @@ AND a.race_date = ?race_date";
             private Dictionary<string, List<InvestRecordQn>> _orders_bet_qp = new Dictionary<string, List<InvestRecordQn>>();
             private Dictionary<string, List<InvestRecordQn>> _orders_eat_qp = new Dictionary<string, List<InvestRecordQn>>();
 
+            private List<InvestRecordWp> _batch_orders_wp = new List<InvestRecordWp>();
+            private List<InvestRecordQn> _batch_orders_qn = new List<InvestRecordQn>();
+
             private const double E_THRESHOLD_SCALE = 1.1;
             public double MIN_R { get; set; }
             public double T { get; set; }
@@ -238,7 +293,7 @@ AND a.race_date = ?race_date";
             public double WP_STEP { get; set; }
             public double QN_STEP { get; set; }
             public double LIMIT_SCALE { get; set; }
-            private const int MODEL = 104;
+            private const int MODEL = -1;
 
             private static DateTime UNIXTIME_BASE = new DateTime(1970, 1, 1, 8, 0, 0);
 
@@ -265,6 +320,7 @@ AND a.race_date = ?race_date";
                 if (_tDaemon == null)
                 {
                     _tDaemon = new Thread(new ThreadStart(daemon));
+                    _tDaemon.Name = string.Format("守护-{0}-{1}", this.CardID, this.RaceNo);
                     _tDaemon.IsBackground = true;
                     _tDaemon.Start();
                 }
@@ -299,6 +355,7 @@ AND a.race_date = ?race_date";
                             }
                         }
                     });
+                    _tBet.Name = string.Format("下单-{0}-{1}", this.CardID, this.RaceNo);
                     _tBet.IsBackground = true;
                     _tBet.Start();
                 }
@@ -342,6 +399,7 @@ AND a.race_date = ?race_date";
                             if (_tFix == null)
                             {
                                 _tFix = new Thread(new ThreadStart(fix));
+                                _tFix.Name = string.Format("拟合-{0}-{1}", this.CardID, this.RaceNo);
                                 _tFix.IsBackground = true;
                                 _tFix.Start();
                             }
@@ -434,7 +492,7 @@ AND a.race_date = ?race_date";
             }
 
             /// <summary>
-            /// 计算Eat W/P单的平仓利润
+            /// 计算Eat单的平仓利润
             /// </summary>
             /// <param name="orderDiscount"></param>
             /// <param name="orderLimit"></param>
@@ -443,7 +501,7 @@ AND a.race_date = ?race_date";
             /// <param name="worstOdds"></param>
             /// <param name="probability"></param>
             /// <returns></returns>
-            private double calcCloseProfitForEatWp(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability)
+            private double calcCloseProfitForEat(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability)
             {
                 if (waterLimit >= orderLimit)
                 {
@@ -460,7 +518,7 @@ AND a.race_date = ?race_date";
             }
 
             /// <summary>
-            /// 计算Bet W/P单的平仓利润
+            /// 计算Bet单的平仓利润
             /// </summary>
             /// <param name="orderDiscount"></param>
             /// <param name="orderLimit"></param>
@@ -469,7 +527,7 @@ AND a.race_date = ?race_date";
             /// <param name="worstOdds"></param>
             /// <param name="probability"></param>
             /// <returns></returns>
-            private double calcCloseProfitForBetWp(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability)
+            private double calcCloseProfitForBet(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability)
             {
                 if (waterLimit <= orderLimit)
                 {
@@ -486,7 +544,7 @@ AND a.race_date = ?race_date";
             }
 
             /// <summary>
-            /// 计算Eat W/P单的当前预计盈利
+            /// 计算Eat单的当前预计盈利
             /// </summary>
             /// <param name="orderDiscount"></param>
             /// <param name="orderLimit"></param>
@@ -495,21 +553,21 @@ AND a.race_date = ?race_date";
             /// <param name="worstOdds"></param>
             /// <param name="probability"></param>
             /// <returns></returns>
-            private double calcForcastProfitForEatWp(double orderDiscount, double orderLimit, double worstOdds, double probability)
+            private double calcForcastProfitForEat(double orderDiscount, double orderLimit, double worstOdds, double probability)
             {
                 //return (1 + (orderDiscount / 100) / (Math.Min(orderLimit / LIMIT_SCALE, worstOdds) - (orderDiscount / 100))) * (1 - probability) - 1;
                 return (orderDiscount / 100) - Math.Min(orderLimit / LIMIT_SCALE, worstOdds) * probability;
             }
 
             /// <summary>
-            /// 计算Bet W/P单的当前预计盈利
+            /// 计算Bet单的当前预计盈利
             /// </summary>
             /// <param name="orderDiscount"></param>
             /// <param name="orderLimit"></param>
             /// <param name="worstOdds"></param>
             /// <param name="probability"></param>
             /// <returns></returns>
-            private double calcForcastProfitForBetWp(double orderDiscount, double orderLimit, double worstOdds, double probability)
+            private double calcForcastProfitForBet(double orderDiscount, double orderLimit, double worstOdds, double probability)
             {
                 return Math.Min(orderLimit / LIMIT_SCALE, worstOdds) * probability - (orderDiscount / 100);
             }
@@ -714,8 +772,8 @@ AND a.race_date = ?race_date";
                                             while (flagSW)
                                             {
                                                 InvestRecordWp currentOrder = ordersSW.Current;
-                                                double closeProfit = this.calcCloseProfitForEatWp(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]);
-                                                double forcastProfit = this.calcForcastProfitForEatWp(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]);
+                                                double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
@@ -731,7 +789,8 @@ AND a.race_date = ?race_date";
                                                         WinLimit = wi.WinLimit,
                                                         WinAmount = bet_amount,
                                                         WinProbility = p1[i],
-                                                        CloseFlag = true
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -769,8 +828,8 @@ AND a.race_date = ?race_date";
                                             while (flagSP)
                                             {
                                                 InvestRecordWp currentOrder = ordersSP.Current;
-                                                double closeProfit = this.calcCloseProfitForEatWp(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
-                                                double forcastProfit = this.calcForcastProfitForEatWp(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double bet_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, wi.PlcAmount - wi.TradedAmount);
@@ -786,7 +845,8 @@ AND a.race_date = ?race_date";
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = bet_amount,
                                                         PlcProbility = p3[i],
-                                                        CloseFlag = true
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -825,11 +885,11 @@ AND a.race_date = ?race_date";
                                             {
                                                 InvestRecordWp currentOrder = ordersWP.Current;
                                                 double closeProfit = 
-                                                    this.calcCloseProfitForEatWp(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
-                                                    this.calcCloseProfitForEatWp(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                    this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
+                                                    this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 double forcastProfit = 
-                                                    this.calcForcastProfitForEatWp(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
-                                                    this.calcForcastProfitForEatWp(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                    this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
+                                                    this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
@@ -848,7 +908,8 @@ AND a.race_date = ?race_date";
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = bet_amount,
                                                         PlcProbility = p3[i],
-                                                        CloseFlag = true
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -1013,8 +1074,8 @@ AND a.race_date = ?race_date";
                                             while (flagSW)
                                             {
                                                 InvestRecordWp currentOrder = ordersSW.Current;
-                                                double closeProfit = this.calcCloseProfitForBetWp(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]);
-                                                double forcastProfit = this.calcForcastProfitForBetWp(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]);
+                                                double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
@@ -1030,7 +1091,8 @@ AND a.race_date = ?race_date";
                                                         WinLimit = wi.WinLimit,
                                                         WinAmount = eat_amount,
                                                         WinProbility = p1[i],
-                                                        CloseFlag = true
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -1068,8 +1130,8 @@ AND a.race_date = ?race_date";
                                             while (flagSP)
                                             {
                                                 InvestRecordWp currentOrder = ordersSP.Current;
-                                                double closeProfit = this.calcCloseProfitForBetWp(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
-                                                double forcastProfit = this.calcForcastProfitForBetWp(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, plc_min_odds_latest[i], p3[i]); // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double eat_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, wi.PlcAmount - wi.TradedAmount);
@@ -1085,7 +1147,8 @@ AND a.race_date = ?race_date";
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = eat_amount,
                                                         PlcProbility = p3[i],
-                                                        CloseFlag = true
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -1113,7 +1176,7 @@ AND a.race_date = ?race_date";
                                                 else
                                                 {
                                                     // 当前order不能平仓，后续order不需要再看了
-                                                    flagSW = false;
+                                                    flagSP = false;
                                                 }
                                             }
                                         }
@@ -1124,11 +1187,11 @@ AND a.race_date = ?race_date";
                                             {
                                                 InvestRecordWp currentOrder = ordersWP.Current;
                                                 double closeProfit =
-                                                    this.calcCloseProfitForBetWp(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
-                                                    this.calcCloseProfitForBetWp(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                    this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
+                                                    this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 double forcastProfit =
-                                                    this.calcForcastProfitForBetWp(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
-                                                    this.calcForcastProfitForBetWp(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                    this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
+                                                    this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, plc_min_odds_latest[i], p3[i]);  // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
@@ -1147,7 +1210,8 @@ AND a.race_date = ?race_date";
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = eat_amount,
                                                         PlcProbility = p3[i],
-                                                        CloseFlag = true
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -1246,10 +1310,81 @@ AND a.race_date = ?race_date";
                                                 Probility = pq_win[i],
                                                 FittingLoss = E
                                             };
-                                            if (this.order(ir)) bet_amount += ir.Amount;
+                                            if (this.order(ir))
+                                            {
+                                                bet_amount += ir.Amount;
+                                                w.TradedAmount += ir.Amount;
+                                            }
                                         }
                                     }
                                     _bet_amount_qn[horseNo] = bet_amount;
+
+                                    //平仓EAT Q单
+                                    #region 平仓
+                                    if (_orders_eat_qn.ContainsKey(horseNo))  // _orders_eat_qn 在order方法中记录
+                                    {
+                                        // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
+                                        IEnumerator<InvestRecordQn> orders = _orders_eat_qn[horseNo].Where(x => x.CloseAmount < x.Amount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                        bool flag = orders.MoveNext();
+                                        foreach (WaterQnItem wi in _latest_waters.GetQnBetWater(horseNo))
+                                        {
+                                            while(flag)
+                                            {
+                                                InvestRecordQn currentOrder = orders.Current;
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
+                                                double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
+                                                if (closeProfit > forcastProfit)
+                                                {
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    InvestRecordQn ir = new InvestRecordQn()
+                                                    {
+                                                        TimeKey = ToUnixTime(DateTime.Now),
+                                                        Model = MODEL,
+                                                        CardID = CardID,
+                                                        RaceNo = RaceNo,
+                                                        Direction = "BET",
+                                                        Type = "Q",
+                                                        HorseNo = horseNo,
+                                                        Percent = wi.Percent,
+                                                        Amount = close_amount,
+                                                        Limit = wi.Limit,
+                                                        Odds = latestOdds.SpQ[horseNo],
+                                                        Probility = pq_win[i],
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
+                                                    };
+                                                    if (this.order(ir))
+                                                    {
+                                                        wi.TradedAmount += close_amount;
+                                                        currentOrder.CloseAmount += close_amount;
+                                                        _bet_amount_qn[horseNo] += close_amount;
+
+                                                        if (currentOrder.CloseAmount >= currentOrder.Amount)
+                                                        {
+                                                            // 下一个订单
+                                                            flag = orders.MoveNext();
+                                                        }
+                                                        if (wi.TradedAmount >= wi.Amount)
+                                                        {
+                                                            // 下一条水位
+                                                            break;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 下单失败，尝试下一条水位
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // 当前order不能平仓，后续order不需要再看了
+                                                    flag = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    #endregion
                                 }
 
                                 // For Eat
@@ -1291,6 +1426,73 @@ AND a.race_date = ?race_date";
                                         }
                                     }
                                     _bet_amount_qn[horseNo] = -eat_amount;
+
+                                    //平仓BET Q单
+                                    #region 平仓
+                                    if (_orders_bet_qn.ContainsKey(horseNo))  // _orders_bet_qn 在order方法中记录
+                                    {
+                                        // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
+                                        IEnumerator<InvestRecordQn> orders = _orders_bet_qn[horseNo].Where(x => x.CloseAmount < x.Amount).OrderBy(x => x.Percent).GetEnumerator();
+                                        bool flag = orders.MoveNext();
+                                        foreach (WaterQnItem wi in _latest_waters.GetQnBetWater(horseNo))
+                                        {
+                                            while (flag)
+                                            {
+                                                InvestRecordQn currentOrder = orders.Current;
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
+                                                double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
+                                                if (closeProfit > forcastProfit)
+                                                {
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    InvestRecordQn ir = new InvestRecordQn()
+                                                    {
+                                                        TimeKey = ToUnixTime(DateTime.Now),
+                                                        Model = MODEL,
+                                                        CardID = CardID,
+                                                        RaceNo = RaceNo,
+                                                        Direction = "EAT",
+                                                        Type = "Q",
+                                                        HorseNo = horseNo,
+                                                        Percent = wi.Percent,
+                                                        Amount = close_amount,
+                                                        Limit = wi.Limit,
+                                                        Odds = latestOdds.SpQ[horseNo],
+                                                        Probility = pq_win[i],
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
+                                                    };
+                                                    if (this.order(ir))
+                                                    {
+                                                        wi.TradedAmount += close_amount;
+                                                        currentOrder.CloseAmount += close_amount;
+                                                        _bet_amount_qn[horseNo] -= close_amount;
+
+                                                        if (currentOrder.CloseAmount >= currentOrder.Amount)
+                                                        {
+                                                            // 下一个订单
+                                                            flag = orders.MoveNext();
+                                                        }
+                                                        if (wi.TradedAmount >= wi.Amount)
+                                                        {
+                                                            // 下一条水位
+                                                            break;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 下单失败，尝试下一条水位
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // 当前order不能平仓，后续order不需要再看了
+                                                    flag = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    #endregion
                                 }
                             }
                             #endregion
@@ -1341,6 +1543,73 @@ AND a.race_date = ?race_date";
                                         }
                                     }
                                     _bet_amount_qp[horseNo] = bet_amount;
+
+                                    //平仓EAT QP单
+                                    #region 平仓
+                                    if (_orders_eat_qp.ContainsKey(horseNo))  // _orders_eat_qp 在order方法中记录
+                                    {
+                                        // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
+                                        IEnumerator<InvestRecordQn> orders = _orders_eat_qp[horseNo].Where(x => x.CloseAmount < x.Amount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                        bool flag = orders.MoveNext();
+                                        foreach (WaterQnItem wi in _latest_waters.GetQpBetWater(horseNo))
+                                        {
+                                            while (flag)
+                                            {
+                                                InvestRecordQn currentOrder = orders.Current;
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
+                                                double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
+                                                if (closeProfit > forcastProfit)
+                                                {
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    InvestRecordQn ir = new InvestRecordQn()
+                                                    {
+                                                        TimeKey = ToUnixTime(DateTime.Now),
+                                                        Model = MODEL,
+                                                        CardID = CardID,
+                                                        RaceNo = RaceNo,
+                                                        Direction = "BET",
+                                                        Type = "QP",
+                                                        HorseNo = horseNo,
+                                                        Percent = wi.Percent,
+                                                        Amount = close_amount,
+                                                        Limit = wi.Limit,
+                                                        Odds = qp_minmax_odds_latest[1][i],
+                                                        Probility = pq_plc[i],
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
+                                                    };
+                                                    if (this.order(ir))
+                                                    {
+                                                        wi.TradedAmount += close_amount;
+                                                        currentOrder.CloseAmount += close_amount;
+                                                        _bet_amount_qp[horseNo] += close_amount;
+
+                                                        if (currentOrder.CloseAmount >= currentOrder.Amount)
+                                                        {
+                                                            // 下一个订单
+                                                            flag = orders.MoveNext();
+                                                        }
+                                                        if (wi.TradedAmount >= wi.Amount)
+                                                        {
+                                                            // 下一条水位
+                                                            break;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 下单失败，尝试下一条水位
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // 当前order不能平仓，后续order不需要再看了
+                                                    flag = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    #endregion
                                 }
 
                                 // For Eat
@@ -1382,10 +1651,80 @@ AND a.race_date = ?race_date";
                                         }
                                     }
                                     _bet_amount_qp[horseNo] = -eat_amount;
+
+                                    //平仓BET Q单
+                                    #region 平仓
+                                    if (_orders_bet_qp.ContainsKey(horseNo))  // _orders_bet_qp 在order方法中记录
+                                    {
+                                        // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
+                                        IEnumerator<InvestRecordQn> orders = _orders_bet_qp[horseNo].Where(x => x.CloseAmount < x.Amount).OrderBy(x => x.Percent).GetEnumerator();
+                                        bool flag = orders.MoveNext();
+                                        foreach (WaterQnItem wi in _latest_waters.GetQpBetWater(horseNo))
+                                        {
+                                            while (flag)
+                                            {
+                                                InvestRecordQn currentOrder = orders.Current;
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
+                                                double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.Limit, qp_minmax_odds_latest[0][i], pq_plc[i]); // Bet单forcast的最差赔率是最低赔率
+                                                if (closeProfit > forcastProfit)
+                                                {
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    InvestRecordQn ir = new InvestRecordQn()
+                                                    {
+                                                        TimeKey = ToUnixTime(DateTime.Now),
+                                                        Model = MODEL,
+                                                        CardID = CardID,
+                                                        RaceNo = RaceNo,
+                                                        Direction = "EAT",
+                                                        Type = "QP",
+                                                        HorseNo = horseNo,
+                                                        Percent = wi.Percent,
+                                                        Amount = close_amount,
+                                                        Limit = wi.Limit,
+                                                        Odds = qp_minmax_odds_latest[1][i],
+                                                        Probility = pq_plc[i],
+                                                        CloseFlag = true,
+                                                        RefItem = currentOrder
+                                                    };
+                                                    if (this.order(ir))
+                                                    {
+                                                        wi.TradedAmount += close_amount;
+                                                        currentOrder.CloseAmount += close_amount;
+                                                        _bet_amount_qp[horseNo] -= close_amount;
+
+                                                        if (currentOrder.CloseAmount >= currentOrder.Amount)
+                                                        {
+                                                            // 下一个订单
+                                                            flag = orders.MoveNext();
+                                                        }
+                                                        if (wi.TradedAmount >= wi.Amount)
+                                                        {
+                                                            // 下一条水位
+                                                            break;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // 下单失败，尝试下一条水位
+                                                        break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // 当前order不能平仓，后续order不需要再看了
+                                                    flag = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    #endregion
                                 }
                             }
                             #endregion
                         }
+
+                        this.orderExecute(_batch_orders_wp);
+                        this.orderExecute(_batch_orders_qn);
 
                         this.OnProcess(new RaceProcessEventArgs() { Description = "下单完成" });
                     }
@@ -1429,9 +1768,9 @@ AND a.race_date = ?race_date";
                     conn.Open();
 
                     using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_wp (time_key,model,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,rc_time,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob)
-values (?time_key,?model,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?rc_time,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob)
-on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt,w_od=?w_od,w_prob=?w_prob,p_amt=?p_amt,p_od=?p_od,p_prob=?p_prob,lmt=CURRENT_TIMESTAMP()
+insert into sl_invest_wp (time_key,model,cd_id,rc_no,direction,hs_no,percent,w_limit,p_limit,rc_time,fitting_loss,w_amt,w_od,w_prob,p_amt,p_od,p_prob,is_close,ref_id)
+values (?time_key,?model,?cd_id,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?rc_time,?fitting_loss,?w_amt,?w_od,?w_prob,?p_amt,?p_od,?p_prob,?is_close,?ref_id);
+SELECT LAST_INSERT_ID()
 ", conn))
                     {
                         cmd.Parameters.Add("?time_key", MySqlDbType.Int64).Value = ir.TimeKey;
@@ -1451,10 +1790,14 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt
                         cmd.Parameters.Add("?p_amt", MySqlDbType.Decimal).Value = ir.PlcAmount;
                         cmd.Parameters.Add("?p_od", MySqlDbType.Decimal).Value = ir.PlcOdds;
                         cmd.Parameters.Add("?p_prob", MySqlDbType.Decimal).Value = ir.PlcProbility;
+                        cmd.Parameters.Add("?is_close", MySqlDbType.UByte).Value = ir.CloseFlag ? 1 : 0;
+                        cmd.Parameters.Add("?ref_id", MySqlDbType.UInt32).Value = ir.RefItem == null ? 0 : ir.RefItem.ID;
 
-                        cmd.ExecuteNonQuery();
+                        ir.ID = Convert.ToUInt32(cmd.ExecuteScalar());
                     }
                 }
+
+                _batch_orders_wp.Add(ir);
 
                 return true;
             }
@@ -1510,9 +1853,9 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,w_amt=?w_amt
                     conn.Open();
 
                     using (MySqlCommand cmd = new MySqlCommand(@"
-insert into sl_invest_qn(time_key,model,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,rc_time,fitting_loss,amt,od,prob)
-values (?time_key,?model,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?rc_time,?fitting_loss,?amt,?od,?prob)
-on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=?od,prob=?prob,lmt=CURRENT_TIMESTAMP()
+insert into sl_invest_qn(time_key,model,cd_id,rc_no,direction,q_type,hs_no,percent,q_limit,rc_time,fitting_loss,amt,od,prob,is_close,ref_id)
+values (?time_key,?model,?cd_id,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?rc_time,?fitting_loss,?amt,?od,?prob,?is_close,?ref_id);
+SELECT LAST_INSERT_ID()
 ", conn))
                     {
                         cmd.Parameters.Add("?time_key", MySqlDbType.Int64).Value = ir.TimeKey;
@@ -1529,11 +1872,249 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=
                         cmd.Parameters.Add("?amt", MySqlDbType.Decimal).Value = ir.Amount;
                         cmd.Parameters.Add("?od", MySqlDbType.Decimal).Value = ir.Odds;
                         cmd.Parameters.Add("?prob", MySqlDbType.Decimal).Value = ir.Probility;
+                        cmd.Parameters.Add("?is_close", MySqlDbType.UByte).Value = ir.CloseFlag ? 1 : 0;
+                        cmd.Parameters.Add("?ref_id", MySqlDbType.UInt32).Value = ir.RefItem == null ? 0 : ir.RefItem.ID;
 
-                        cmd.ExecuteNonQuery();
+                        ir.ID = Convert.ToUInt32(cmd.ExecuteScalar());
                     }
                 }
 
+                _batch_orders_qn.Add(ir);
+
+                return true;
+            }
+
+            private void orderExecute(List<InvestRecordWp> batch)
+            {
+                if (batch.Count == 0) return;
+
+                Dictionary<string, OrderWp> grouped = new Dictionary<string, OrderWp>();
+                foreach (InvestRecordWp item in batch)
+                {
+                    string key = string.Format("{0}-{1}-{2}-{3}-{4}", item.Direction, item.HorseNo, item.Percent, item.WinLimit, item.PlcLimit);
+                    if (!grouped.ContainsKey(key))
+                    {
+                        grouped.Add(key, new OrderWp()
+                        {
+                            CardID = item.CardID,
+                            RaceNo = item.RaceNo,
+                            RaceDate = this.RaceDate,
+                            RaceType = this.RaceType,
+                            Direction = item.Direction,
+                            HorseNo = item.HorseNo,
+                            Percent = item.Percent,
+                            WinLimit = item.WinLimit,
+                            PlcLimit = item.PlcLimit
+                        });
+                    }
+                    grouped[key].Amount += item.WinLimit > 0 ? item.WinAmount : item.PlcAmount;
+                    grouped[key].Records.Add(item);
+                }
+
+                using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
+                {
+                    conn.Open();
+
+                    using (MySqlCommand cmd = new MySqlCommand(@"
+insert into sl_order_wp(cd_id,rc_date,rc_type,rc_no,direction,hs_no,percent,w_limit,p_limit,amount)
+values (?cd_id,?rc_date,?rc_type,?rc_no,?direction,?hs_no,?percent,?w_limit,?p_limit,?amount);
+SELECT LAST_INSERT_ID()
+", conn))
+                    {
+                        cmd.Parameters.Add("?cd_id", MySqlDbType.UInt64).Value = this.CardID;
+                        cmd.Parameters.Add("?rc_date", MySqlDbType.VarChar, 20).Value = this.RaceDate;
+                        cmd.Parameters.Add("?rc_type", MySqlDbType.VarChar, 10).Value = this.RaceType;
+                        cmd.Parameters.Add("?rc_no", MySqlDbType.Int32).Value = this.RaceNo;
+                        cmd.Parameters.Add("?direction", MySqlDbType.VarChar, 10);
+                        cmd.Parameters.Add("?hs_no", MySqlDbType.Int32);
+                        cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
+                        cmd.Parameters.Add("?w_limit", MySqlDbType.Decimal);
+                        cmd.Parameters.Add("?p_limit", MySqlDbType.Decimal);
+                        cmd.Parameters.Add("?amount", MySqlDbType.Decimal);
+
+                        foreach (OrderWp order in grouped.Values)
+                        {
+                            cmd.Parameters["?direction"].Value = order.Direction;
+                            cmd.Parameters["?hs_no"].Value = int.Parse(order.HorseNo);
+                            cmd.Parameters["?percent"].Value = order.Percent;
+                            cmd.Parameters["?w_limit"].Value = order.WinLimit;
+                            cmd.Parameters["?p_limit"].Value = order.PlcLimit;
+                            cmd.Parameters["?amount"].Value = order.Amount;
+
+                            order.ID = Convert.ToUInt32(cmd.ExecuteScalar());
+
+                            using (MySqlCommand cmd2 = new MySqlCommand())
+                            {
+                                cmd2.CommandText = "update sl_invest_wp set order_id = ?order_id where id in (" + string.Join(",", order.Records.Select(x => x.ID.ToString()).ToArray()) + ")";
+                                cmd2.Connection = conn;
+                                cmd2.Parameters.AddWithValue("?order_id", order.ID);
+                                cmd2.ExecuteNonQuery();
+                            }
+
+                            if (this.orderApi(order))
+                            {
+                                foreach (InvestRecordWp item in order.Records)
+                                {
+                                    item.OrderId = order.ID;
+                                }
+
+                                using (MySqlCommand cmd2 = new MySqlCommand())
+                                {
+                                    cmd2.CommandText = "update sl_order_wp set state = 1 where id = ?order_id";
+                                    cmd2.Connection = conn;
+                                    cmd2.Parameters.AddWithValue("?order_id", order.ID);
+                                    cmd2.ExecuteNonQuery();
+                                }
+                            }
+                            else
+                            {
+                                foreach (InvestRecordWp item in order.Records)
+                                {
+                                    if (item.CloseFlag)
+                                    {
+                                        item.RefItem.CloseAmount -= (item.WinLimit > 0 ? item.WinAmount : item.PlcAmount);
+                                    }
+                                    if (item.Direction == "BET")
+                                    {
+                                        _bet_amount_win[item.HorseNo] -= item.WinAmount;
+                                        _bet_amount_plc[item.HorseNo] -= item.PlcAmount;
+                                    }
+                                    else
+                                    {
+                                        _bet_amount_win[item.HorseNo] += item.WinAmount;
+                                        _bet_amount_plc[item.HorseNo] += item.PlcAmount;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+
+                batch.Clear();
+            }
+
+            private void orderExecute(List<InvestRecordQn> batch)
+            {
+                if (batch.Count == 0) return;
+
+                Dictionary<string, OrderQn> grouped = new Dictionary<string, OrderQn>();
+                foreach (InvestRecordQn item in batch)
+                {
+                    string key = string.Format("{0}-{1}-{2}-{3}-{4}", item.Direction, item.Type, item.HorseNo, item.Percent, item.Limit);
+                    if (!grouped.ContainsKey(key))
+                    {
+                        grouped.Add(key, new OrderQn()
+                        {
+                            CardID = item.CardID,
+                            RaceNo = item.RaceNo,
+                            RaceDate = this.RaceDate,
+                            RaceType = this.RaceType,
+                            Direction = item.Direction,
+                            Type = item.Type,
+                            HorseNo = item.HorseNo,
+                            Percent = item.Percent,
+                            Limit = item.Limit
+                        });
+                    }
+                    grouped[key].Amount += item.Amount;
+                    grouped[key].Records.Add(item);
+                }
+
+                using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
+                {
+                    conn.Open();
+
+                    using (MySqlCommand cmd = new MySqlCommand(@"
+insert into sl_order_qn(cd_id,rc_date,rc_type,rc_no,direction,q_type,hs_no,percent,q_limit,amount)
+values (?cd_id,?rc_date,?rc_type,?rc_no,?direction,?q_type,?hs_no,?percent,?q_limit,?amount);
+SELECT LAST_INSERT_ID()
+", conn))
+                    {
+                        cmd.Parameters.Add("?cd_id", MySqlDbType.UInt64).Value = this.CardID;
+                        cmd.Parameters.Add("?rc_date", MySqlDbType.VarChar, 20).Value = this.RaceDate;
+                        cmd.Parameters.Add("?rc_type", MySqlDbType.VarChar, 10).Value = this.RaceType;
+                        cmd.Parameters.Add("?rc_no", MySqlDbType.Int32).Value = this.RaceNo;
+                        cmd.Parameters.Add("?direction", MySqlDbType.VarChar, 10);
+                        cmd.Parameters.Add("?q_type", MySqlDbType.VarChar, 10);
+                        cmd.Parameters.Add("?hs_no", MySqlDbType.VarChar, 20);
+                        cmd.Parameters.Add("?percent", MySqlDbType.Decimal);
+                        cmd.Parameters.Add("?q_limit", MySqlDbType.Decimal);
+                        cmd.Parameters.Add("?amount", MySqlDbType.Decimal);
+
+                        foreach (OrderQn order in grouped.Values)
+                        {
+                            cmd.Parameters["?direction"].Value = order.Direction;
+                            cmd.Parameters["?hs_no"].Value = order.HorseNo;
+                            cmd.Parameters["?q_type"].Value = order.Type;
+                            cmd.Parameters["?percent"].Value = order.Percent;
+                            cmd.Parameters["?q_limit"].Value = order.Limit;
+                            cmd.Parameters["?amount"].Value = order.Amount;
+
+                            order.ID = Convert.ToUInt32(cmd.ExecuteScalar());
+
+                            using (MySqlCommand cmd2 = new MySqlCommand())
+                            {
+                                cmd2.CommandText = "update sl_invest_qn set order_id = ?order_id where id in (" + string.Join(",", order.Records.Select(x => x.ID.ToString()).ToArray()) + ")";
+                                cmd2.Connection = conn;
+                                cmd2.Parameters.AddWithValue("?order_id", order.ID);
+                                cmd2.ExecuteNonQuery();
+                            }
+
+                            if (this.orderApi(order))
+                            {
+                                foreach (InvestRecordQn item in order.Records)
+                                {
+                                    item.OrderId = order.ID;
+                                }
+
+                                using (MySqlCommand cmd2 = new MySqlCommand())
+                                {
+                                    cmd2.CommandText = "update sl_order_qn set state = 1 where id = ?order_id";
+                                    cmd2.Connection = conn;
+                                    cmd2.Parameters.AddWithValue("?order_id", order.ID);
+                                    cmd2.ExecuteNonQuery();
+                                }
+                            }
+                            else
+                            {
+                                foreach (InvestRecordQn item in order.Records)
+                                {
+                                    if (item.CloseFlag)
+                                    {
+                                        item.RefItem.CloseAmount -= item.Amount;
+                                    }
+                                    if (item.Direction == "BET")
+                                    {
+                                        if (item.Type == "Q")
+                                            _bet_amount_qn[item.HorseNo] -= item.Amount;
+                                        else
+                                            _bet_amount_qp[item.HorseNo] -= item.Amount;
+                                    }
+                                    else
+                                    {
+                                        if (item.Type == "Q")
+                                            _bet_amount_qn[item.HorseNo] += item.Amount;
+                                        else
+                                            _bet_amount_qp[item.HorseNo] += item.Amount;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                batch.Clear();
+            }
+
+            private bool orderApi(OrderWp order)
+            {
+                return true;
+            }
+
+            private bool orderApi(OrderQn order)
+            {
                 return true;
             }
 
@@ -1933,7 +2514,10 @@ on duplicate key update rc_time=?rc_time,fitting_loss=?fitting_loss,amt=?amt,od=
                         JObject jo = (JObject)JsonConvert.DeserializeObject(sr.ReadToEnd());
                         if ((string)jo["STS"] == "OK")
                         {
-                            return (string)jo["data"];
+                            if (jo["data"] == null)
+                                return "";
+                            else
+                                return (string)jo["data"];
                         }
                         else
                         {
