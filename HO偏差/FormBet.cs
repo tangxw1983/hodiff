@@ -754,9 +754,9 @@ AND a.race_date = ?race_date";
                                 if (_orders_eat_wp.ContainsKey(h.No))  // _orders_eat_wp 在order方法中记录
                                 {
                                     // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
-                                    IEnumerator<InvestRecordWp> ordersSW = _orders_eat_wp[h.No].Where(x => x.WinAmount > 0 && x.PlcAmount == 0 && x.CloseAmount < x.WinAmount).OrderByDescending(x => x.Percent).GetEnumerator();
-                                    IEnumerator<InvestRecordWp> ordersSP = _orders_eat_wp[h.No].Where(x => x.PlcAmount > 0 && x.WinAmount == 0 && x.CloseAmount < x.PlcAmount).OrderByDescending(x => x.Percent).GetEnumerator();
-                                    IEnumerator<InvestRecordWp> ordersWP = _orders_eat_wp[h.No].Where(x => x.PlcAmount == x.WinAmount && x.CloseAmount < x.PlcAmount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                    IEnumerator<InvestRecordWp> ordersSW = _orders_eat_wp[h.No].Where(x => x.WinAmount > 0 && x.PlcAmount == 0 && x.OrderId > 0 && x.CloseAmount < x.WinAmount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                    IEnumerator<InvestRecordWp> ordersSP = _orders_eat_wp[h.No].Where(x => x.PlcAmount > 0 && x.WinAmount == 0 && x.OrderId > 0 && x.CloseAmount < x.PlcAmount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                    IEnumerator<InvestRecordWp> ordersWP = _orders_eat_wp[h.No].Where(x => x.PlcAmount == x.WinAmount && x.OrderId > 0 && x.CloseAmount < x.PlcAmount).OrderByDescending(x => x.Percent).GetEnumerator();
                                     bool flagSW = ordersSW.MoveNext();
                                     bool flagSP = ordersSP.MoveNext();
                                     bool flagWP = ordersWP.MoveNext();
@@ -768,6 +768,7 @@ AND a.race_date = ?race_date";
                                     {
                                         if (wi.WinAmount > 0 && wi.PlcAmount == 0)
                                         {
+                                            if (wi.WinAmount - wi.TradedAmount <= 0) continue;
                                             watersSW.Add(wi);
                                             while (flagSW)
                                             {
@@ -776,7 +777,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
+                                                    double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -789,6 +790,7 @@ AND a.race_date = ?race_date";
                                                         WinLimit = wi.WinLimit,
                                                         WinAmount = bet_amount,
                                                         WinProbility = p1[i],
+                                                        WinOdds = h.Win,
                                                         CloseFlag = true,
                                                         RefItem = currentOrder
                                                     };
@@ -824,6 +826,7 @@ AND a.race_date = ?race_date";
                                         }
                                         else if (wi.PlcAmount > 0 && wi.WinAmount == 0)
                                         {
+                                            if (wi.PlcAmount - wi.TradedAmount <= 0) continue;
                                             watersSP.Add(wi);
                                             while (flagSP)
                                             {
@@ -832,7 +835,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double bet_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, wi.PlcAmount - wi.TradedAmount);
+                                                    double bet_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, Math.Ceiling((wi.PlcAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -845,6 +848,7 @@ AND a.race_date = ?race_date";
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = bet_amount,
                                                         PlcProbility = p3[i],
+                                                        PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
                                                         RefItem = currentOrder
                                                     };
@@ -874,25 +878,26 @@ AND a.race_date = ?race_date";
                                                 else
                                                 {
                                                     // 当前order不能平仓，后续order不需要再看了
-                                                    flagSW = false;
+                                                    flagSP = false;
                                                 }
                                             }
                                         }
                                         else if (wi.WinAmount == wi.PlcAmount)
                                         {
+                                            if (wi.WinAmount - wi.TradedAmount <= 0) continue;
                                             watersWP.Add(wi);
                                             while (flagWP)
                                             {
                                                 InvestRecordWp currentOrder = ordersWP.Current;
-                                                double closeProfit = 
+                                                double closeProfit =
                                                     this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
                                                     this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
-                                                double forcastProfit = 
+                                                double forcastProfit =
                                                     this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
                                                     this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
+                                                    double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -905,9 +910,11 @@ AND a.race_date = ?race_date";
                                                         WinLimit = wi.WinLimit,
                                                         WinAmount = bet_amount,
                                                         WinProbility = p1[i],
+                                                        WinOdds = h.Win,
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = bet_amount,
                                                         PlcProbility = p3[i],
+                                                        PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
                                                         RefItem = currentOrder
                                                     };
@@ -1056,9 +1063,9 @@ AND a.race_date = ?race_date";
                                 if (_orders_bet_wp.ContainsKey(h.No))  // _orders_bet_wp 在order方法中记录
                                 {
                                     // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
-                                    IEnumerator<InvestRecordWp> ordersSW = _orders_bet_wp[h.No].Where(x => x.WinAmount > 0 && x.PlcAmount == 0 && x.CloseAmount < x.WinAmount).OrderBy(x => x.Percent).GetEnumerator();
-                                    IEnumerator<InvestRecordWp> ordersSP = _orders_bet_wp[h.No].Where(x => x.PlcAmount > 0 && x.WinAmount == 0 && x.CloseAmount < x.PlcAmount).OrderBy(x => x.Percent).GetEnumerator();
-                                    IEnumerator<InvestRecordWp> ordersWP = _orders_bet_wp[h.No].Where(x => x.PlcAmount == x.WinAmount && x.CloseAmount < x.PlcAmount).OrderBy(x => x.Percent).GetEnumerator();
+                                    IEnumerator<InvestRecordWp> ordersSW = _orders_bet_wp[h.No].Where(x => x.WinAmount > 0 && x.PlcAmount == 0 && x.OrderId > 0 && x.CloseAmount < x.WinAmount).OrderBy(x => x.Percent).GetEnumerator();
+                                    IEnumerator<InvestRecordWp> ordersSP = _orders_bet_wp[h.No].Where(x => x.PlcAmount > 0 && x.WinAmount == 0 && x.OrderId > 0 && x.CloseAmount < x.PlcAmount).OrderBy(x => x.Percent).GetEnumerator();
+                                    IEnumerator<InvestRecordWp> ordersWP = _orders_bet_wp[h.No].Where(x => x.PlcAmount == x.WinAmount && x.OrderId > 0 && x.CloseAmount < x.PlcAmount).OrderBy(x => x.Percent).GetEnumerator();
                                     bool flagSW = ordersSW.MoveNext();
                                     bool flagSP = ordersSP.MoveNext();
                                     bool flagWP = ordersWP.MoveNext();
@@ -1070,6 +1077,7 @@ AND a.race_date = ?race_date";
                                     {
                                         if (wi.WinAmount > 0 && wi.PlcAmount == 0)
                                         {
+                                            if (wi.WinAmount <= wi.TradedAmount) continue;
                                             watersSW.Add(wi);
                                             while (flagSW)
                                             {
@@ -1078,7 +1086,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
+                                                    double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1091,6 +1099,7 @@ AND a.race_date = ?race_date";
                                                         WinLimit = wi.WinLimit,
                                                         WinAmount = eat_amount,
                                                         WinProbility = p1[i],
+                                                        WinOdds = h.Win,
                                                         CloseFlag = true,
                                                         RefItem = currentOrder
                                                     };
@@ -1126,6 +1135,7 @@ AND a.race_date = ?race_date";
                                         }
                                         else if (wi.PlcAmount > 0 && wi.WinAmount == 0)
                                         {
+                                            if (wi.PlcAmount <= wi.TradedAmount) continue;
                                             watersSP.Add(wi);
                                             while (flagSP)
                                             {
@@ -1134,7 +1144,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, plc_min_odds_latest[i], p3[i]); // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double eat_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, wi.PlcAmount - wi.TradedAmount);
+                                                    double eat_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, Math.Ceiling((wi.PlcAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1147,6 +1157,7 @@ AND a.race_date = ?race_date";
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = eat_amount,
                                                         PlcProbility = p3[i],
+                                                        PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
                                                         RefItem = currentOrder
                                                     };
@@ -1182,6 +1193,7 @@ AND a.race_date = ?race_date";
                                         }
                                         else if (wi.WinAmount == wi.PlcAmount)
                                         {
+                                            if (wi.WinAmount <= wi.TradedAmount) continue;
                                             watersWP.Add(wi);
                                             while (flagWP)
                                             {
@@ -1194,7 +1206,7 @@ AND a.race_date = ?race_date";
                                                     this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, plc_min_odds_latest[i], p3[i]);  // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, wi.WinAmount - wi.TradedAmount);
+                                                    double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1207,9 +1219,11 @@ AND a.race_date = ?race_date";
                                                         WinLimit = wi.WinLimit,
                                                         WinAmount = eat_amount,
                                                         WinProbility = p1[i],
+                                                        WinOdds = h.Win,
                                                         PlcLimit = wi.PlcLimit,
                                                         PlcAmount = eat_amount,
                                                         PlcProbility = p3[i],
+                                                        PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
                                                         RefItem = currentOrder
                                                     };
@@ -1324,10 +1338,11 @@ AND a.race_date = ?race_date";
                                     if (_orders_eat_qn.ContainsKey(horseNo))  // _orders_eat_qn 在order方法中记录
                                     {
                                         // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
-                                        IEnumerator<InvestRecordQn> orders = _orders_eat_qn[horseNo].Where(x => x.CloseAmount < x.Amount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                        IEnumerator<InvestRecordQn> orders = _orders_eat_qn[horseNo].Where(x => x.CloseAmount < x.Amount && x.OrderId > 0).OrderByDescending(x => x.Percent).GetEnumerator();
                                         bool flag = orders.MoveNext();
                                         foreach (WaterQnItem wi in _latest_waters.GetQnBetWater(horseNo))
                                         {
+                                            if (wi.Amount <= wi.TradedAmount) continue;
                                             while(flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
@@ -1335,7 +1350,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1432,10 +1447,11 @@ AND a.race_date = ?race_date";
                                     if (_orders_bet_qn.ContainsKey(horseNo))  // _orders_bet_qn 在order方法中记录
                                     {
                                         // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
-                                        IEnumerator<InvestRecordQn> orders = _orders_bet_qn[horseNo].Where(x => x.CloseAmount < x.Amount).OrderBy(x => x.Percent).GetEnumerator();
+                                        IEnumerator<InvestRecordQn> orders = _orders_bet_qn[horseNo].Where(x => x.CloseAmount < x.Amount && x.OrderId > 0).OrderBy(x => x.Percent).GetEnumerator();
                                         bool flag = orders.MoveNext();
                                         foreach (WaterQnItem wi in _latest_waters.GetQnBetWater(horseNo))
                                         {
+                                            if (wi.Amount <= wi.TradedAmount) continue;
                                             while (flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
@@ -1443,7 +1459,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1549,10 +1565,11 @@ AND a.race_date = ?race_date";
                                     if (_orders_eat_qp.ContainsKey(horseNo))  // _orders_eat_qp 在order方法中记录
                                     {
                                         // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
-                                        IEnumerator<InvestRecordQn> orders = _orders_eat_qp[horseNo].Where(x => x.CloseAmount < x.Amount).OrderByDescending(x => x.Percent).GetEnumerator();
+                                        IEnumerator<InvestRecordQn> orders = _orders_eat_qp[horseNo].Where(x => x.CloseAmount < x.Amount && x.OrderId > 0).OrderByDescending(x => x.Percent).GetEnumerator();
                                         bool flag = orders.MoveNext();
                                         foreach (WaterQnItem wi in _latest_waters.GetQpBetWater(horseNo))
                                         {
+                                            if (wi.Amount <= wi.TradedAmount) continue;
                                             while (flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
@@ -1560,7 +1577,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1657,10 +1674,11 @@ AND a.race_date = ?race_date";
                                     if (_orders_bet_qp.ContainsKey(horseNo))  // _orders_bet_qp 在order方法中记录
                                     {
                                         // order从优到劣排序，如果当前order不能平仓，后续的order也肯定不能平仓
-                                        IEnumerator<InvestRecordQn> orders = _orders_bet_qp[horseNo].Where(x => x.CloseAmount < x.Amount).OrderBy(x => x.Percent).GetEnumerator();
+                                        IEnumerator<InvestRecordQn> orders = _orders_bet_qp[horseNo].Where(x => x.CloseAmount < x.Amount && x.OrderId > 0).OrderBy(x => x.Percent).GetEnumerator();
                                         bool flag = orders.MoveNext();
                                         foreach (WaterQnItem wi in _latest_waters.GetQpBetWater(horseNo))
                                         {
+                                            if (wi.Amount <= wi.TradedAmount) continue;
                                             while (flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
@@ -1668,7 +1686,7 @@ AND a.race_date = ?race_date";
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.Limit, qp_minmax_odds_latest[0][i], pq_plc[i]); // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
-                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, wi.Amount - wi.TradedAmount);
+                                                    double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1760,8 +1778,11 @@ AND a.race_date = ?race_date";
                         }
                     }
                 }
-                
-                this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("下单：{0}-{1} {2}: {3}%*{4}/{5}({6}/{7})", ir.RaceNo, ir.Direction, ir.HorseNo, ir.Percent, ir.WinAmount, ir.PlcAmount, ir.WinLimit, ir.PlcLimit) });
+
+                if (!ir.CloseFlag)
+                    this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("下单：{0}-{1} {2}: {3}%*{4}/{5}({6}/{7})", ir.RaceNo, ir.Direction, ir.HorseNo, ir.Percent, ir.WinAmount, ir.PlcAmount, ir.WinLimit, ir.PlcLimit) });
+                else
+                    this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("平仓：{0}-{1} {2}: {3}%*{4}/{5}({6}/{7})", ir.RaceNo, ir.Direction, ir.HorseNo, ir.Percent, ir.WinAmount, ir.PlcAmount, ir.WinLimit, ir.PlcLimit) });
 
                 using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
                 {
@@ -1846,7 +1867,10 @@ SELECT LAST_INSERT_ID()
                     }
                 }
 
-                this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("下单：{0}-{1} {2} {3}: {4}%*{5}({6})", ir.RaceNo, ir.Direction, ir.Type, ir.HorseNo, ir.Percent, ir.Amount, ir.Limit) });
+                if (!ir.CloseFlag)
+                    this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("下单：{0}-{1} {2} {3}: {4}%*{5}({6})", ir.RaceNo, ir.Direction, ir.Type, ir.HorseNo, ir.Percent, ir.Amount, ir.Limit) });
+                else
+                    this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("平仓：{0}-{1} {2} {3}: {4}%*{5}({6})", ir.RaceNo, ir.Direction, ir.Type, ir.HorseNo, ir.Percent, ir.Amount, ir.Limit) });
 
                 using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
                 {
