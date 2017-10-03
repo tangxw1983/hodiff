@@ -22,6 +22,10 @@ namespace HO偏差
         public double WinLimit { get; set; }
         public double PlcAmount { get; set; }
         public double PlcLimit { get; set; }
+
+        [NonSerialized]
+        private double _tradedAmount;
+        public double TradedAmount { get { return _tradedAmount; } set { _tradedAmount = value; } }
     }
 
     public class WaterWPList : List<WaterWPItem>
