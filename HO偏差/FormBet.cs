@@ -149,6 +149,8 @@ AND a.race_date = ?race_date";
             public bool CloseFlag { get; set; }
             public InvestRecordWp RefItem { get; set; }
             public uint OrderId { get; set; }
+            public double CloseRiskIncWin { get; set; }
+            public double CloseRiskIncPlc { get; set; }
         }
 
         class OrderWp
@@ -192,6 +194,7 @@ AND a.race_date = ?race_date";
             public bool CloseFlag { get; set; }
             public InvestRecordQn RefItem { get; set; }
             public uint OrderId { get; set; }
+            public double CloseRiskInc { get; set; }
         }
 
         class OrderQn
@@ -275,6 +278,10 @@ AND a.race_date = ?race_date";
             private Dictionary<string, double> _bet_amount_plc = new Dictionary<string, double>();
             private Dictionary<string, double> _bet_amount_qn = new Dictionary<string, double>();
             private Dictionary<string, double> _bet_amount_qp = new Dictionary<string, double>();
+            private Dictionary<string, double> _close_risk_win = new Dictionary<string, double>();
+            private Dictionary<string, double> _close_risk_plc = new Dictionary<string, double>();
+            private Dictionary<string, double> _close_risk_qn = new Dictionary<string, double>();
+            private Dictionary<string, double> _close_risk_qp = new Dictionary<string, double>();
 
             private Dictionary<string, List<InvestRecordWp>> _orders_bet_wp = new Dictionary<string, List<InvestRecordWp>>();
             private Dictionary<string, List<InvestRecordWp>> _orders_eat_wp = new Dictionary<string, List<InvestRecordWp>>();
@@ -501,19 +508,32 @@ AND a.race_date = ?race_date";
             /// <param name="worstOdds"></param>
             /// <param name="probability"></param>
             /// <returns></returns>
-            private double calcCloseProfitForEat(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability)
+            private double calcCloseProfitForEat(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability, out double risk, out double maxCloseAmount)
             {
                 if (waterLimit >= orderLimit)
                 {
-                    return orderDiscount - waterDiscount;
-                }
-                else if (worstOdds <= waterLimit)
-                {
+                    risk = 0;
+                    maxCloseAmount = double.MaxValue;
                     return orderDiscount - waterDiscount;
                 }
                 else
                 {
-                    return (orderDiscount - waterDiscount) * (1 - probability) - (Math.Min(orderLimit, worstOdds) - waterLimit) * probability;
+                    double profit;
+                    if (worstOdds <= waterLimit)
+                    {
+                        risk = (orderLimit - waterLimit) / 2 / LIMIT_SCALE;
+                        profit = orderDiscount - waterDiscount;
+                    }
+                    else
+                    {
+                        risk = Math.Max(Math.Min(orderLimit, worstOdds) - waterLimit, (orderLimit - waterLimit) / 2) / LIMIT_SCALE;
+                        profit = (orderDiscount - waterDiscount) * (1 - probability) - (Math.Min(orderLimit, worstOdds) - waterLimit) * probability;
+                    }
+
+                    double r = (risk + profit) / risk;
+                    double O = r / (1 - probability);
+                    maxCloseAmount = (T * Math.Pow(r - 1, 2)) / (LOSS_RATE_COEFFICIENT * r * (O - r)) / risk;
+                    return profit;
                 }
             }
 
@@ -527,19 +547,32 @@ AND a.race_date = ?race_date";
             /// <param name="worstOdds"></param>
             /// <param name="probability"></param>
             /// <returns></returns>
-            private double calcCloseProfitForBet(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability)
+            private double calcCloseProfitForBet(double orderDiscount, double orderLimit, double waterDiscount, double waterLimit, double worstOdds, double probability, out double risk, out double maxCloseAmount)
             {
                 if (waterLimit <= orderLimit)
                 {
-                    return waterDiscount - orderDiscount;
-                }
-                else if (worstOdds <= orderLimit)
-                {
+                    risk = 0;
+                    maxCloseAmount = double.MaxValue;
                     return waterDiscount - orderDiscount;
                 }
                 else
                 {
-                    return (orderDiscount - waterDiscount) * (1 - probability) - (Math.Min(waterLimit, worstOdds) - orderLimit) * probability;
+                    double profit;
+                    if (worstOdds <= orderLimit)
+                    {
+                        risk = (waterLimit - orderLimit) / 2 / LIMIT_SCALE;
+                        profit = waterDiscount - orderDiscount;
+                    }
+                    else
+                    {
+                        risk = Math.Max(Math.Min(waterLimit, worstOdds) - orderLimit, (waterLimit - orderLimit) / 2) / LIMIT_SCALE;
+                        profit = (orderDiscount - waterDiscount) * (1 - probability) - (Math.Min(waterLimit, worstOdds) - orderLimit) * probability;
+                    }
+
+                    double r = (risk + profit) / risk;
+                    double O = r / (1 - probability);
+                    maxCloseAmount = (T * Math.Pow(r - 1, 2)) / (LOSS_RATE_COEFFICIENT * r * (O - r)) / risk;
+                    return profit;
                 }
             }
 
@@ -570,6 +603,21 @@ AND a.race_date = ?race_date";
             private double calcForcastProfitForBet(double orderDiscount, double orderLimit, double worstOdds, double probability)
             {
                 return Math.Min(orderLimit / LIMIT_SCALE, worstOdds) * probability - (orderDiscount / 100);
+            }
+
+            private bool checkCloseRisk(double risk, double maxCloseAmount, double roundStep, string betId, ref Dictionary<string, double> riskContainer, ref double closeAmount)
+            {
+                if (!riskContainer.ContainsKey(betId)) riskContainer[betId] = 0;
+                if (risk > 0)
+                {
+                    if (closeAmount > maxCloseAmount - riskContainer[betId] / risk)
+                        closeAmount = Math.Round((maxCloseAmount - riskContainer[betId] / risk) / roundStep) * roundStep;
+                    return closeAmount > 0;
+                }
+                else
+                {
+                    return true;
+                }
             }
 
             private void bet()
@@ -773,11 +821,18 @@ AND a.race_date = ?race_date";
                                             while (flagSW)
                                             {
                                                 InvestRecordWp currentOrder = ordersSW.Current;
-                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
+                                                    // 平仓风险限制
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, WP_STEP, h.No, ref _close_risk_win, ref bet_amount))
+                                                    {
+                                                        flagSW = ordersSW.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -792,13 +847,15 @@ AND a.race_date = ?race_date";
                                                         WinProbility = p1[i],
                                                         WinOdds = h.Win,
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskIncWin = bet_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += bet_amount;
                                                         currentOrder.CloseAmount += bet_amount;
                                                         _bet_amount_win[h.No] += bet_amount;
+                                                        _close_risk_win[h.No] += ir.CloseRiskIncWin;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.WinAmount)
                                                         {
@@ -831,11 +888,18 @@ AND a.race_date = ?race_date";
                                             while (flagSP)
                                             {
                                                 InvestRecordWp currentOrder = ordersSP.Current;
-                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double bet_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, Math.Ceiling((wi.PlcAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
+                                                    // 平仓风险限制
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, WP_STEP, h.No, ref _close_risk_plc, ref bet_amount))
+                                                    {
+                                                        flagSW = ordersSW.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -850,13 +914,15 @@ AND a.race_date = ?race_date";
                                                         PlcProbility = p3[i],
                                                         PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskIncPlc = bet_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += bet_amount;
                                                         currentOrder.CloseAmount += bet_amount;
                                                         _bet_amount_plc[h.No] += bet_amount;
+                                                        _close_risk_plc[h.No] += ir.CloseRiskIncPlc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.WinAmount)
                                                         {
@@ -889,15 +955,27 @@ AND a.race_date = ?race_date";
                                             while (flagWP)
                                             {
                                                 InvestRecordWp currentOrder = ordersWP.Current;
+                                                double riskW, riskP, maxCloseAmountW, maxCloseAmountP;
                                                 double closeProfit =
-                                                    this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
-                                                    this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                    this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i], out riskW, out maxCloseAmountW) +
+                                                    this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i], out riskP, out maxCloseAmountP);
                                                 double forcastProfit =
                                                     this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
                                                     this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.PlcLimit, plc_max_odds_latest[i], p3[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double bet_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
+                                                    // 平仓风险限制
+                                                    if (!this.checkCloseRisk(riskW, maxCloseAmountW, WP_STEP, h.No, ref _close_risk_win, ref bet_amount))
+                                                    {
+                                                        flagWP = ordersWP.MoveNext();
+                                                        continue;
+                                                    }
+                                                    if (!this.checkCloseRisk(riskP, maxCloseAmountP, WP_STEP, h.No, ref _close_risk_plc, ref bet_amount))
+                                                    {
+                                                        flagWP = ordersWP.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -916,7 +994,9 @@ AND a.race_date = ?race_date";
                                                         PlcProbility = p3[i],
                                                         PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskIncWin = bet_amount * riskW,
+                                                        CloseRiskIncPlc = bet_amount * riskP
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -924,6 +1004,8 @@ AND a.race_date = ?race_date";
                                                         currentOrder.CloseAmount += bet_amount;
                                                         _bet_amount_win[h.No] += bet_amount;
                                                         _bet_amount_plc[h.No] += bet_amount;
+                                                        _close_risk_win[h.No] += ir.CloseRiskIncWin;
+                                                        _close_risk_plc[h.No] += ir.CloseRiskIncPlc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.WinAmount)
                                                         {
@@ -1082,11 +1164,18 @@ AND a.race_date = ?race_date";
                                             while (flagSW)
                                             {
                                                 InvestRecordWp currentOrder = ordersSW.Current;
-                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
+                                                    // 平仓风险限制
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, WP_STEP, h.No, ref _close_risk_win, ref eat_amount))
+                                                    {
+                                                        flagSW = ordersSW.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1101,13 +1190,15 @@ AND a.race_date = ?race_date";
                                                         WinProbility = p1[i],
                                                         WinOdds = h.Win,
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskIncWin = eat_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += eat_amount;
                                                         currentOrder.CloseAmount += eat_amount;
                                                         _bet_amount_win[h.No] -= eat_amount;
+                                                        _close_risk_win[h.No] += ir.CloseRiskIncWin;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.WinAmount)
                                                         {
@@ -1140,11 +1231,18 @@ AND a.race_date = ?race_date";
                                             while (flagSP)
                                             {
                                                 InvestRecordWp currentOrder = ordersSP.Current;
-                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, plc_min_odds_latest[i], p3[i]); // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double eat_amount = Math.Min(currentOrder.PlcAmount - currentOrder.CloseAmount, Math.Ceiling((wi.PlcAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
+                                                    // 平仓风险限制
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, WP_STEP, h.No, ref _close_risk_plc, ref eat_amount))
+                                                    {
+                                                        flagSP = ordersSP.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1159,13 +1257,15 @@ AND a.race_date = ?race_date";
                                                         PlcProbility = p3[i],
                                                         PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskIncPlc = eat_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += eat_amount;
                                                         currentOrder.CloseAmount += eat_amount;
                                                         _bet_amount_plc[h.No] -= eat_amount;
+                                                        _close_risk_plc[h.No] += ir.CloseRiskIncPlc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.WinAmount)
                                                         {
@@ -1198,15 +1298,27 @@ AND a.race_date = ?race_date";
                                             while (flagWP)
                                             {
                                                 InvestRecordWp currentOrder = ordersWP.Current;
+                                                double riskW, riskP, maxCloseAmountW, maxCloseAmountP;
                                                 double closeProfit =
-                                                    this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i]) +
-                                                    this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i]);
+                                                    this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.WinLimit, wi.Percent, wi.WinLimit, h.Win, p1[i], out riskW, out maxCloseAmountW) +
+                                                    this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, wi.Percent, wi.PlcLimit, plc_max_odds_latest[i], p3[i], out riskP, out maxCloseAmountP);
                                                 double forcastProfit =
                                                     this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.WinLimit, h.Win, p1[i]) +
                                                     this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.PlcLimit, plc_min_odds_latest[i], p3[i]);  // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double eat_amount = Math.Min(currentOrder.WinAmount - currentOrder.CloseAmount, Math.Ceiling((wi.WinAmount - wi.TradedAmount) / WP_STEP) * WP_STEP);
+                                                    // 平仓风险限制
+                                                    if (!this.checkCloseRisk(riskW, maxCloseAmountW, WP_STEP, h.No, ref _close_risk_win, ref eat_amount))
+                                                    {
+                                                        flagWP = ordersWP.MoveNext();
+                                                        continue;
+                                                    }
+                                                    if (!this.checkCloseRisk(riskP, maxCloseAmountP, WP_STEP, h.No, ref _close_risk_plc, ref eat_amount))
+                                                    {
+                                                        flagWP = ordersWP.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordWp ir = new InvestRecordWp()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1225,7 +1337,9 @@ AND a.race_date = ?race_date";
                                                         PlcProbility = p3[i],
                                                         PlcOdds = plc_max_odds_latest[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskIncWin = eat_amount * riskW,
+                                                        CloseRiskIncPlc = eat_amount * riskP
                                                     };
                                                     if (this.order(ir))
                                                     {
@@ -1233,6 +1347,8 @@ AND a.race_date = ?race_date";
                                                         currentOrder.CloseAmount += eat_amount;
                                                         _bet_amount_win[h.No] -= eat_amount;
                                                         _bet_amount_plc[h.No] -= eat_amount;
+                                                        _close_risk_win[h.No] += ir.CloseRiskIncWin;
+                                                        _close_risk_plc[h.No] += ir.CloseRiskIncPlc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.WinAmount)
                                                         {
@@ -1346,11 +1462,17 @@ AND a.race_date = ?race_date";
                                             while(flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
-                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, latestOdds.SpQ[horseNo], pq_win[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, QN_STEP, horseNo, ref _close_risk_qn, ref close_amount))
+                                                    {
+                                                        flag = orders.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1366,13 +1488,15 @@ AND a.race_date = ?race_date";
                                                         Odds = latestOdds.SpQ[horseNo],
                                                         Probility = pq_win[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskInc = close_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += close_amount;
                                                         currentOrder.CloseAmount += close_amount;
                                                         _bet_amount_qn[horseNo] += close_amount;
+                                                        _close_risk_qn[horseNo] += ir.CloseRiskInc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.Amount)
                                                         {
@@ -1455,11 +1579,17 @@ AND a.race_date = ?race_date";
                                             while (flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
-                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, latestOdds.SpQ[horseNo], pq_win[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.Limit, latestOdds.SpQ[horseNo], pq_win[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, QN_STEP, horseNo, ref _close_risk_qn, ref close_amount))
+                                                    {
+                                                        flag = orders.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1475,13 +1605,15 @@ AND a.race_date = ?race_date";
                                                         Odds = latestOdds.SpQ[horseNo],
                                                         Probility = pq_win[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskInc = close_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += close_amount;
                                                         currentOrder.CloseAmount += close_amount;
                                                         _bet_amount_qn[horseNo] -= close_amount;
+                                                        _close_risk_qn[horseNo] += ir.CloseRiskInc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.Amount)
                                                         {
@@ -1573,11 +1705,17 @@ AND a.race_date = ?race_date";
                                             while (flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
-                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForEat(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, qp_minmax_odds_latest[1][i], pq_plc[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForEat(currentOrder.Percent, currentOrder.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, QN_STEP, horseNo, ref _close_risk_qp, ref close_amount))
+                                                    {
+                                                        flag = orders.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1593,13 +1731,15 @@ AND a.race_date = ?race_date";
                                                         Odds = qp_minmax_odds_latest[1][i],
                                                         Probility = pq_plc[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskInc = close_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += close_amount;
                                                         currentOrder.CloseAmount += close_amount;
                                                         _bet_amount_qp[horseNo] += close_amount;
+                                                        _close_risk_qp[horseNo] += ir.CloseRiskInc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.Amount)
                                                         {
@@ -1682,11 +1822,17 @@ AND a.race_date = ?race_date";
                                             while (flag)
                                             {
                                                 InvestRecordQn currentOrder = orders.Current;
-                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, qp_minmax_odds_latest[1][i], pq_plc[i]);
+                                                double risk, maxCloseAmount;
+                                                double closeProfit = this.calcCloseProfitForBet(currentOrder.Percent, currentOrder.Limit, wi.Percent, wi.Limit, qp_minmax_odds_latest[1][i], pq_plc[i], out risk, out maxCloseAmount);
                                                 double forcastProfit = this.calcForcastProfitForBet(currentOrder.Percent, currentOrder.Limit, qp_minmax_odds_latest[0][i], pq_plc[i]); // Bet单forcast的最差赔率是最低赔率
                                                 if (closeProfit > forcastProfit)
                                                 {
                                                     double close_amount = Math.Min(currentOrder.Amount - currentOrder.CloseAmount, Math.Ceiling((wi.Amount - wi.TradedAmount) / QN_STEP) * QN_STEP);
+                                                    if (!this.checkCloseRisk(risk, maxCloseAmount, QN_STEP, horseNo, ref _close_risk_qp, ref close_amount))
+                                                    {
+                                                        flag = orders.MoveNext();
+                                                        continue;
+                                                    }
                                                     InvestRecordQn ir = new InvestRecordQn()
                                                     {
                                                         TimeKey = ToUnixTime(DateTime.Now),
@@ -1702,13 +1848,15 @@ AND a.race_date = ?race_date";
                                                         Odds = qp_minmax_odds_latest[1][i],
                                                         Probility = pq_plc[i],
                                                         CloseFlag = true,
-                                                        RefItem = currentOrder
+                                                        RefItem = currentOrder,
+                                                        CloseRiskInc = close_amount * risk
                                                     };
                                                     if (this.order(ir))
                                                     {
                                                         wi.TradedAmount += close_amount;
                                                         currentOrder.CloseAmount += close_amount;
                                                         _bet_amount_qp[horseNo] -= close_amount;
+                                                        _close_risk_qp[horseNo] += ir.CloseRiskInc;
 
                                                         if (currentOrder.CloseAmount >= currentOrder.Amount)
                                                         {
@@ -1997,6 +2145,8 @@ SELECT LAST_INSERT_ID()
                                     if (item.CloseFlag)
                                     {
                                         item.RefItem.CloseAmount -= (item.WinLimit > 0 ? item.WinAmount : item.PlcAmount);
+                                        _close_risk_win[item.HorseNo] -= item.CloseRiskIncWin;
+                                        _close_risk_plc[item.HorseNo] -= item.CloseRiskIncPlc;
                                     }
                                     if (item.Direction == "BET")
                                     {
@@ -2107,6 +2257,10 @@ SELECT LAST_INSERT_ID()
                                     if (item.CloseFlag)
                                     {
                                         item.RefItem.CloseAmount -= item.Amount;
+                                        if (item.Type == "Q")
+                                            _close_risk_qn[item.HorseNo] -= item.CloseRiskInc;
+                                        else
+                                            _close_risk_qp[item.HorseNo] -= item.CloseRiskInc;
                                     }
                                     if (item.Direction == "BET")
                                     {
@@ -2538,10 +2692,7 @@ SELECT LAST_INSERT_ID()
                         JObject jo = (JObject)JsonConvert.DeserializeObject(sr.ReadToEnd());
                         if ((string)jo["STS"] == "OK")
                         {
-                            if (jo["data"] == null)
-                                return "";
-                            else
-                                return (string)jo["data"];
+                            return (string)jo["data"];
                         }
                         else
                         {
