@@ -897,7 +897,7 @@ AND a.race_date = ?race_date";
                                                     // 平仓风险限制
                                                     if (!this.checkCloseRisk(risk, maxCloseAmount, WP_STEP, h.No, ref _close_risk_plc, ref bet_amount))
                                                     {
-                                                        flagSW = ordersSW.MoveNext();
+                                                        flagSP = ordersSP.MoveNext();
                                                         continue;
                                                     }
                                                     InvestRecordWp ir = new InvestRecordWp()

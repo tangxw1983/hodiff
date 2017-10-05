@@ -674,7 +674,7 @@ namespace HO偏差
                 for (int i = 0; i < CNT; i++)
                 {
                     ph3[i] = r / s3[i] / PLC_CNT;
-                }                
+                }
             }
             else
             {
@@ -693,14 +693,29 @@ namespace HO偏差
                         od_1_indices.Add(i);
                     }
                 }
-                foreach (int i in od_1_indices)
+
+                if (PLC_CNT > 2)
                 {
-                    ph3[i] = (PLC_CNT - other_p_sum) / od_1_indices.Count;
-                    if (r / ph3[i] / PLC_CNT > 1.1)
+                    double testP = (1 - (other_p_sum * PLC_CNT) / (PLC_CNT - 1)) / od_1_indices.Count;
+                    if (testP > 0 && r / testP / (PLC_CNT - 1) < 1.1)
                     {
-                        // 验证
-                        r = 0;      // 计算偏差过大
-                        break;  
+                        // 假设只有PLC_CNT - 1个中奖项，赔率依然成立，无法确定预计的PLC_CNT是否正确
+                        r = 0;
+                        return ph3;
+                    }
+                }
+
+                double oneOddsP = (1 - other_p_sum) / od_1_indices.Count;
+                if (oneOddsP <= 0 || r / oneOddsP / PLC_CNT > 1.1)
+                {
+                    // 验证
+                    r = 0;      // 计算偏差过大
+                }
+                else
+                {
+                    foreach (int i in od_1_indices)
+                    {
+                        ph3[i] = oneOddsP;
                     }
                 }
             }
@@ -825,14 +840,30 @@ namespace HO偏差
                                 od_1_indices.Add(i);
                             }
                         }
-                        foreach (int i in od_1_indices)
+
+                        if (PLC_CNT > 2)
                         {
-                            pqp[i] = (QP_CNT - other_p_sum) / od_1_indices.Count;
-                            if (pqp[i] > 1 || r / pqp[i] / QP_CNT > 1.1)
+                            double TEST_QP_CNT = (int)(new common.Math.Combination(PLC_CNT - 1, 2)).Length;
+                            double testP = (1 - (other_p_sum * QP_CNT) / TEST_QP_CNT) / od_1_indices.Count;
+                            if (testP > 0 && r / testP / TEST_QP_CNT < 1.1)
                             {
-                                // 验证
-                                r = 0;      // 计算偏差过大
-                                break;
+                                // 假设只有PLC_CNT - 1个中奖项，赔率依然成立，无法确定预计的PLC_CNT是否正确
+                                r = 0;
+                                return pqp;
+                            }
+                        }
+
+                        double oneOddsP = (1 - other_p_sum) / od_1_indices.Count;
+                        if (oneOddsP <= 0 || r / oneOddsP / QP_CNT > 1.1)
+                        {
+                            // 验证
+                            r = 0;      // 计算偏差过大
+                        }
+                        else
+                        {
+                            foreach (int i in od_1_indices)
+                            {
+                                pqp[i] = oneOddsP;
                             }
                         }
                     }
@@ -850,10 +881,10 @@ namespace HO偏差
             if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
             if (betRate.Length != CNT) return null;
 
-            IOrderedEnumerable<double> sorted_rate = betRate.OrderBy(x => x);
+            IOrderedEnumerable<double> sorted_rate = betRate.OrderByDescending(x => x);
             double split_rate = sorted_rate.Skip(PLC_CNT - 1).First();
             double sum_top = sorted_rate.Take(PLC_CNT - 1).Sum();
-            return betRate.Select(x => 1 + (r - sum_top - (x < split_rate ? split_rate : x)) / PLC_CNT / x).ToArray();
+            return betRate.Select(x => 1 + (r - sum_top > (x < split_rate ? split_rate : x) ? (r - sum_top - (x < split_rate ? split_rate : x)) / PLC_CNT / x : 0)).ToArray();
         }
 
         public static double[] calcMaxOddsForPlc(HrsTable table, double[] betRate, double r)
@@ -864,10 +895,10 @@ namespace HO偏差
             if (CNT <= table.PLC_SPLIT_POS) PLC_CNT = 2;
             if (betRate.Length != CNT) return null;
 
-            IOrderedEnumerable<double> sorted_rate = betRate.OrderByDescending(x => x);
+            IOrderedEnumerable<double> sorted_rate = betRate.OrderBy(x => x);
             double split_rate = sorted_rate.Skip(PLC_CNT - 1).First();
             double sum_top = sorted_rate.Take(PLC_CNT - 1).Sum();
-            return betRate.Select(x => 1 + (r - sum_top - (x > split_rate ? split_rate : x)) / PLC_CNT / x).ToArray();
+            return betRate.Select(x => 1 + (r - sum_top > (x > split_rate ? split_rate : x) ? (r - sum_top - (x > split_rate ? split_rate : x)) / PLC_CNT / x : 0)).ToArray();
         }
 
         /// <summary>
@@ -907,7 +938,7 @@ namespace HO偏差
             
             if (PLC_CNT == 2)
             {
-                double[] odds = betRate.Select(x => r / x).ToArray();
+                double[] odds = betRate.Select(x => r < x ? 1 : r / x).ToArray();
                 return new double[][] { odds, odds };
             }
             else
@@ -931,7 +962,7 @@ namespace HO偏差
                             double br1 = betRate[comb.Index(new int[] { j, c[0] })];
                             double br2 = betRate[comb.Index(new int[] { j, c[1] })];
 
-                            double od = (r - br1 - br2 - br0) / 3 / br0;
+                            double od = 1 + (r - br1 - br2 - br0) / 3 / br0;
                             if (od < min) min = od;
                             if (od > max) max = od;
                         }
