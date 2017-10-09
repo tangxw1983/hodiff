@@ -85,6 +85,7 @@ AND a.race_date = ?race_date";
                                 rh.BetTimeInAdvance = (int)dr["strategy_bet_time_in_advance"];
                                 rh.R_PLC = (double)((decimal)dr["data_r_plc"]);
                                 rh.R_QP = (double)((decimal)dr["data_r_qp"]);
+                                rh.ODDS_MODE = (int)dr["odds_mode"];
                                 rh.startDaemon();
                                 rh.Process += rh_Process;
                                 _handlers.Add(rh);
@@ -299,8 +300,9 @@ AND a.race_date = ?race_date";
             public double LOSS_RATE_COEFFICIENT { get; set; }
             public double WP_STEP { get; set; }
             public double QN_STEP { get; set; }
+            public int ODDS_MODE { get; set; }
             public double LIMIT_SCALE { get; set; }
-            private const int MODEL = -1;
+            private const int MODEL = 107;
 
             private static DateTime UNIXTIME_BASE = new DateTime(1970, 1, 1, 8, 0, 0);
 
@@ -514,7 +516,7 @@ AND a.race_date = ?race_date";
                 {
                     risk = 0;
                     maxCloseAmount = double.MaxValue;
-                    return orderDiscount - waterDiscount;
+                    return (orderDiscount - waterDiscount) / 100;
                 }
                 else
                 {
@@ -522,12 +524,12 @@ AND a.race_date = ?race_date";
                     if (worstOdds <= waterLimit)
                     {
                         risk = (orderLimit - waterLimit) / 2 / LIMIT_SCALE;
-                        profit = orderDiscount - waterDiscount;
+                        profit = (orderDiscount - waterDiscount) / 100;
                     }
                     else
                     {
                         risk = Math.Max(Math.Min(orderLimit, worstOdds) - waterLimit, (orderLimit - waterLimit) / 2) / LIMIT_SCALE;
-                        profit = (orderDiscount - waterDiscount) * (1 - probability) - (Math.Min(orderLimit, worstOdds) - waterLimit) * probability;
+                        profit = (orderDiscount - waterDiscount) / 100 * (1 - probability) - (Math.Min(orderLimit, worstOdds) - waterLimit) / 100 * probability;
                     }
 
                     double r = (risk + profit) / risk;
@@ -553,7 +555,7 @@ AND a.race_date = ?race_date";
                 {
                     risk = 0;
                     maxCloseAmount = double.MaxValue;
-                    return waterDiscount - orderDiscount;
+                    return (waterDiscount - orderDiscount) / 100;
                 }
                 else
                 {
@@ -561,12 +563,12 @@ AND a.race_date = ?race_date";
                     if (worstOdds <= orderLimit)
                     {
                         risk = (waterLimit - orderLimit) / 2 / LIMIT_SCALE;
-                        profit = waterDiscount - orderDiscount;
+                        profit = (waterDiscount - orderDiscount) / 100;
                     }
                     else
                     {
                         risk = Math.Max(Math.Min(waterLimit, worstOdds) - orderLimit, (waterLimit - orderLimit) / 2) / LIMIT_SCALE;
-                        profit = (orderDiscount - waterDiscount) * (1 - probability) - (Math.Min(waterLimit, worstOdds) - orderLimit) * probability;
+                        profit = (orderDiscount - waterDiscount) / 100 * (1 - probability) - (Math.Min(waterLimit, worstOdds) - orderLimit) / 100 * probability;
                     }
 
                     double r = (risk + profit) / risk;
@@ -649,7 +651,7 @@ AND a.race_date = ?race_date";
                         q3 = Fitting.calcBetRateForPlcWithStyle2(latestOdds, ref r3);
                         qqn = Fitting.calcBetRateForQn(latestOdds, out rqn);
                         qqp = Fitting.calcBetRateForQpWithStyle2(latestOdds, ref rqp);
-                        double E = cross_entropy(p1, q1) + cross_entropy(pq_win, qqn);
+                        double E = cross_entropy(q1, p1) + cross_entropy(qqn, pq_win);
                         if (r1 < 0.8 || r1 >= 1) this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("赔付率错误：WIN/{0:0.00000}", r1) });
                         if (r3 < 0.8 || r3 >= 1) this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("赔付率错误：PLC/{0:0.00000}", r3) });
                         if (rqn < 0.8 || rqn >= 1) this.OnProcess(new RaceProcessEventArgs() { Description = string.Format("赔付率错误：Q/{0:0.00000}", rqn) });
@@ -672,10 +674,10 @@ AND a.race_date = ?race_date";
                         #region W/P
 
                         // 计算PLC最大与最小的Odds
-                        double[] plc_min_odds_latest = Fitting.calcMinOddsForPlc(latestOdds, q3, r3);
-                        double[] plc_max_odds_latest = Fitting.calcMaxOddsForPlc(latestOdds, q3, r3);
-                        double[] plc_min_odds_fitted = Fitting.calcMinOddsForPlc(fittedOdds, b3_fitted, r3_fitted);
-                        double[] plc_max_odds_fitted = Fitting.calcMaxOddsForPlc(fittedOdds, b3_fitted, r3_fitted);
+                        double[] plc_min_odds_latest = ODDS_MODE == 1 ? Fitting.calcMinOddsForPlc(latestOdds, q3, r3) : latestOdds.SpPlc;
+                        double[] plc_max_odds_latest = ODDS_MODE == 1 ? Fitting.calcMaxOddsForPlc(latestOdds, q3, r3) : latestOdds.SpPlc;
+                        double[] plc_min_odds_fitted = ODDS_MODE == 1 ? Fitting.calcMinOddsForPlc(fittedOdds, b3_fitted, r3_fitted) : fittedOdds.SpPlc;
+                        double[] plc_max_odds_fitted = ODDS_MODE == 1 ? Fitting.calcMaxOddsForPlc(fittedOdds, b3_fitted, r3_fitted) : fittedOdds.SpPlc;
                         for (int i = 0; i < latestOdds.Count; i++)
                         {
                             Hrs h = latestOdds[i];
@@ -1387,8 +1389,8 @@ AND a.race_date = ?race_date";
                         common.Math.Combination comb2 = new common.Math.Combination(latestOdds.Count, 2);
                         int[][] combinations = comb2.GetCombinations();
                         // 计算QP最大与最小的Odds
-                        double[][] qp_minmax_odds_latest = Fitting.calcMinMaxOddsForQp(latestOdds, qqp, rqp);
-                        double[][] qp_minmax_odds_fitted = Fitting.calcMinMaxOddsForQp(latestOdds, bqp_fitted, rqp_fitted);
+                        double[][] qp_minmax_odds_latest = ODDS_MODE == 1 ? Fitting.calcMinMaxOddsForQp(latestOdds, qqp, rqp) : new double[][] { latestOdds.SpQp.Sp, latestOdds.SpQp.Sp };
+                        double[][] qp_minmax_odds_fitted = ODDS_MODE == 1 ? Fitting.calcMinMaxOddsForQp(fittedOdds, bqp_fitted, rqp_fitted) : new double[][] { fittedOdds.SpQp.Sp, fittedOdds.SpQp.Sp };
                         for (int i = 0; i < combinations.Length; i++)
                         {
                             int[] c = combinations[i];
