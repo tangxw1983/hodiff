@@ -71,6 +71,7 @@ AND a.race_date = ?race_date";
                                 rh.RaceID = (ulong)dr["id"];
                                 rh.CardID = (ulong)dr["card_id"];
                                 rh.RaceDate = (string)dr["race_date"];
+                                rh.RaceLoc = (string)dr["race_loc"];
                                 rh.RaceType = (string)dr["race_loc"] + (string)dr["card_char"];
                                 rh.RaceNo = (int)dr["race_no"];
                                 rh.RaceName = string.Format("({0}){1}-{2}/{3}", dr["country"], dr["city"], dr["race_no"], dr["tote_type"]);
@@ -219,14 +220,14 @@ AND a.race_date = ?race_date";
             public List<InvestRecordQn> Records { get; private set; }
         }
 
-        class RaceProcessEventArgs : EventArgs
+        public class RaceProcessEventArgs : EventArgs
         {
             public string Description { get; set; }
         }
 
-        delegate void RaceProcessEventHandler(RaceHandler sender, RaceProcessEventArgs e);
+        public delegate void RaceProcessEventHandler(RaceHandler sender, RaceProcessEventArgs e);
 
-        class RaceHandler
+        public class RaceHandler
         {
             public RaceHandler()
             {
@@ -234,10 +235,13 @@ AND a.race_date = ?race_date";
                 this.BetTimeInAdvance = 20;     // 20秒前开始下单
             }
 
+            private static Random __global_rand__ = new Random();
+
             public ulong RaceID { get; set; }
             public ulong CardID { get; set; }
             public string RaceDate { get; set; }
             public string RaceType { get; set; }
+            public string RaceLoc { get; set; }
             public int RaceNo { get; set; }
             public DateTime StartTime { get; set; }
 
@@ -389,13 +393,69 @@ AND a.race_date = ?race_date";
             {
                 try
                 {
-                    while (true)
+                    int lastUpdateRaceInfo = 0;
+                    for (int i = 0; true; i++)
                     {
+                        int update_time_threshold; 
+                        if (StartTime.Subtract(DateTime.Now).TotalSeconds < 3600)
+                        {
+                            update_time_threshold = 40;
+                        }
+                        else
+                        {
+                            update_time_threshold = 10;
+                        }
+
+                        if (i - lastUpdateRaceInfo > update_time_threshold && __global_rand__.Next(i - lastUpdateRaceInfo) > update_time_threshold)
+                        {
+                            using (MySqlConnection conn = new MySqlConnection("server=120.24.210.35;user id=hrsdata;password=abcd0000;database=hrsdata;port=3306;charset=utf8"))
+                            {
+                                conn.Open();
+
+                                using (MySqlCommand cmd = new MySqlCommand("select * from ct_race where race_date = ?race_date and race_loc = ?race_loc and race_no = ?race_no", conn))
+                                {
+                                    cmd.Parameters.AddWithValue("?race_date", this.RaceDate);
+                                    cmd.Parameters.AddWithValue("?race_loc", this.RaceLoc);
+                                    cmd.Parameters.AddWithValue("?race_no", this.RaceNo);
+
+                                    using (MySqlDataReader dr = cmd.ExecuteReader())
+                                    {
+                                        if (!dr.Read())
+                                        {
+                                            throw new Exception("无法找到比赛信息");
+                                        }
+                                        else
+                                        {
+                                            string date_str = (string)dr["race_date"];
+                                            string time_str = (string)dr["time_text"];
+
+                                            Match md = Regex.Match(date_str, @"^(\d{2})-(\d{2})-(\d{4})$");
+                                            if (md.Success)
+                                            {
+                                                this.StartTime = DateTime.Parse(string.Format("{0}-{1}-{2} {3}",
+                                                        md.Groups[3].Value,
+                                                        md.Groups[2].Value,
+                                                        md.Groups[1].Value,
+                                                        time_str));
+                                            }
+                                            else
+                                            {
+                                                throw new Exception("无法识别的race_date格式");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            lastUpdateRaceInfo = i;
+                            this.OnProcess(new RaceProcessEventArgs() { Description = "赛事信息已更新" });
+                        }
+
                         if (_stage == 0)
                         {
                             if (StartTime.Subtract(DateTime.Now).TotalSeconds > this.FitTimeInAdvance)
                             {
-                                Thread.Sleep(10000);
+                                Thread.Sleep(25000 + __global_rand__.Next(10000));
                             }
                             else
                             {
@@ -2312,7 +2372,7 @@ SELECT LAST_INSERT_ID()
                 return E;
             }
 
-            private bool updateOddsData()
+            public bool updateOddsData()
             {
                 HrsTable table = this.updateWpOddsData();
                 if (table == null)
@@ -2357,7 +2417,7 @@ SELECT LAST_INSERT_ID()
 
                             }
 
-                            table.E = _latest_odds.E;
+                            table.E = double.MaxValue;
                         }
 
                         _latest_odds = table;
@@ -2371,9 +2431,17 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_tote_wp_latest_raw_info?race_id={0}&card_id={1}", RaceID, CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 HrsTable table = new HrsTable() { PLC_SPLIT_POS = this.PLC_SPLIT_POS };
+                if (parseWpOddsRaw(rawInfo, table))
+                    return table;
+                else
+                    return null;
+            }
+
+            public static bool parseWpOddsRaw(string rawInfo, HrsTable table)
+            {
                 if (rawInfo != null)
                 {
                     JArray ja = (JArray)JsonConvert.DeserializeObject(rawInfo);
@@ -2388,16 +2456,16 @@ SELECT LAST_INSERT_ID()
                                 table.Add(new Hrs(jo["horseNo"].ToString(), win, plc));
                             }
                         }
-                        return table;
+                        return true;
                     }
                     else
                     {
-                        return null;
+                        return false;
                     }
                 }
                 else
                 {
-                    return null;
+                    return false;
                 }
             }
 
@@ -2405,15 +2473,19 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_tote_qn_latest_raw_info?race_id={0}&card_id={1}", RaceID, CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
+                return parseQnOddsRaw(rawInfo, table);
+            }
 
+            public static bool parseQnOddsRaw(string rawInfo, HrsTable table)
+            {
                 if (rawInfo != null)
                 {
                     JObject jo = (JObject)JsonConvert.DeserializeObject(rawInfo);
                     if (jo != null)
                     {
-                        this.parseQnTote((string)jo["text_q"], table.SpQ);
-                        this.parseQnTote((string)jo["text_qp"], table.SpQp);
+                        parseQnTote((string)jo["text_q"], table.SpQ);
+                        parseQnTote((string)jo["text_qp"], table.SpQp);
 
                         return true;
                     }
@@ -2432,7 +2504,7 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_discount_wp_latest_raw_info?card_id={0}&direction=0", CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 if (rawInfo != null)
                 {
@@ -2450,7 +2522,7 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_discount_wp_latest_raw_info?card_id={0}&direction=1", CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 if (rawInfo != null)
                 {
@@ -2468,7 +2540,7 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_discount_qn_latest_raw_info?card_id={0}&type=Q&direction=0", CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 if (rawInfo != null)
                 {
@@ -2486,7 +2558,7 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_discount_qn_latest_raw_info?card_id={0}&type=Q&direction=1", CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 if (rawInfo != null)
                 {
@@ -2504,7 +2576,7 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_discount_qn_latest_raw_info?card_id={0}&type=QP&direction=0", CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 if (rawInfo != null)
                 {
@@ -2522,7 +2594,7 @@ SELECT LAST_INSERT_ID()
             {
                 string url, rawInfo;
                 url = string.Format("http://120.24.210.35:3000/data/market/get_discount_qn_latest_raw_info?card_id={0}&type=QP&direction=1", CardID);
-                rawInfo = this.getRawInfoByAPI(url);
+                rawInfo = getRawInfoByAPI(url);
 
                 if (rawInfo != null)
                 {
@@ -2536,7 +2608,7 @@ SELECT LAST_INSERT_ID()
                 }
             }
 
-            private void parseQnTote(string text, Dictionary<string, double> dict)
+            private static void parseQnTote(string text, Dictionary<string, double> dict)
             {
                 text = Regex.Replace(text, @"^\s+", "", RegexOptions.Singleline);
                 text = Regex.Replace(text, @"\s+$", "", RegexOptions.Singleline);
@@ -2684,7 +2756,7 @@ SELECT LAST_INSERT_ID()
                 }
             }
 
-            private string getRawInfoByAPI(string url)
+            public static string getRawInfoByAPI(string url)
             {
                 System.Net.WebClient wc = new System.Net.WebClient();
                 using (System.IO.Stream s = wc.OpenRead(url))

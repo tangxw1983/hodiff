@@ -9,7 +9,7 @@ using System.Runtime.Serialization;
 namespace HO偏差
 {
     [Serializable()]
-    class Hrs
+    public class Hrs
     {
         private Hrs()
         {
@@ -32,7 +32,7 @@ namespace HO偏差
     }
 
     [Serializable()]
-    class HrsTable : List<Hrs>
+    public class HrsTable : List<Hrs>
     {
         public HrsTable() : base()
         {
@@ -149,7 +149,7 @@ namespace HO偏差
     }
 
     [Serializable()]
-    class Comb2Table : Dictionary<string, double>
+    public class Comb2Table : Dictionary<string, double>
     {
         public Comb2Table(HrsTable owner)
         {
