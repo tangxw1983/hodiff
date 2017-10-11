@@ -77,8 +77,13 @@ AND a.race_date = ?race_date";
                                 rh.RaceName = string.Format("({0}){1}-{2}/{3}", dr["country"], dr["city"], dr["race_no"], dr["tote_type"]);
                                 rh.PLC_SPLIT_POS = (int)dr["data_plc_split_pos"];
                                 rh.MIN_R = (double)((decimal)dr["risk_min_r"]);
+                                rh.MAX_R = (double)((decimal)dr["risk_max_r"]);
                                 rh.T = (double)((decimal)dr["risk_total_bet"]);
                                 rh.LOSS_RATE_COEFFICIENT = (double)((decimal)dr["risk_loss_rate_coefficient"]);
+                                rh.BET_MAX_DISCOUNT_WP = (double)((decimal)dr["risk_bet_max_discount_wp"]);
+                                rh.EAT_MIN_DISCOUNT_WP = (double)((decimal)dr["risk_eat_min_discount_wp"]);
+                                rh.BET_MAX_DISCOUNT_QN = (double)((decimal)dr["risk_bet_max_discount_qn"]);
+                                rh.EAT_MIN_DISCOUNT_QN = (double)((decimal)dr["risk_eat_min_discount_qn"]);
                                 rh.WP_STEP = (double)((decimal)dr["order_wp_step"]);
                                 rh.QN_STEP = (double)((decimal)dr["order_qn_step"]);
                                 rh.LIMIT_SCALE = (double)((decimal)dr["data_limit_scale"]);
@@ -300,6 +305,11 @@ AND a.race_date = ?race_date";
 
             private const double E_THRESHOLD_SCALE = 1.1;
             public double MIN_R { get; set; }
+            public double MAX_R { get; set; }
+            public double BET_MAX_DISCOUNT_WP { get; set; }
+            public double EAT_MIN_DISCOUNT_WP { get; set; }
+            public double BET_MAX_DISCOUNT_QN { get; set; }
+            public double EAT_MIN_DISCOUNT_QN { get; set; }
             public double T { get; set; }
             public double LOSS_RATE_COEFFICIENT { get; set; }
             public double WP_STEP { get; set; }
@@ -772,6 +782,8 @@ AND a.race_date = ?race_date";
                                 bool full_win = false, full_plc = false;
                                 foreach (WaterWPItem w in vlist.OrderBy(x => x.Percent))
                                 {
+                                    if (full_win && full_plc) break;
+                                    if (w.Percent > BET_MAX_DISCOUNT_WP) break;  // 超过水位上限
                                     if (w.WinAmount > 0 && full_win) continue;
                                     if (w.PlcAmount > 0 && full_plc) continue;
 
@@ -780,6 +792,13 @@ AND a.race_date = ?race_date";
                                     if (w.WinAmount > 0)
                                     {
                                         double O = Math.Min(w.WinLimit / LIMIT_SCALE, sp_w_min) * 100 / w.Percent;
+                                        if (O * p1[i] > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            full_win = true;
+                                            continue;
+                                        }
+
                                         double max_bet = (T * Math.Pow(O * p1[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * p1[i] * (1 - p1[i]));
                                         if (bet_amount_win >= max_bet)
                                         {
@@ -795,6 +814,13 @@ AND a.race_date = ?race_date";
                                     if (w.PlcAmount > 0)
                                     {
                                         double O = Math.Min(w.PlcLimit / LIMIT_SCALE, sp_p_min) * 100 / w.Percent;
+                                        if (O * p3[i] > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            full_plc = true;
+                                            continue;
+                                        }
+
                                         double max_bet = (T * Math.Pow(O * p3[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * p3[i] * (1 - p3[i]));
                                         if (bet_amount_plc >= max_bet)
                                         {
@@ -1109,6 +1135,8 @@ AND a.race_date = ?race_date";
                                 bool full_win = false, full_plc = false;
                                 foreach (WaterWPItem w in vlist.OrderByDescending(x => x.Percent))
                                 {
+                                    if (full_win && full_plc) break;
+                                    if (w.Percent < EAT_MIN_DISCOUNT_WP) break;   // 超过水位下限
                                     if (w.WinAmount > 0 && full_win) continue;
                                     if (w.PlcAmount > 0 && full_plc) continue;
 
@@ -1121,6 +1149,13 @@ AND a.race_date = ?race_date";
                                         // 输获得 = 0
                                         // Odds = 赢获得 / 投入 = SP / (SP - percent) = 1 + percent / (SP - percent)
                                         double O = 1 + (w.Percent / 100) / (Math.Min(w.WinLimit / LIMIT_SCALE, sp_w_max) - (w.Percent / 100));
+                                        if (O * (1 - p1[i]) > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            full_win = true;
+                                            continue;
+                                        }
+
                                         double max_eat = (T * Math.Pow(O * (1 - p1[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - p1[i]) * p1[i]);
                                         max_eat = max_eat / Math.Min(w.WinLimit / LIMIT_SCALE, sp_w_max);
                                         if (eat_amount_win >= max_eat)
@@ -1137,6 +1172,13 @@ AND a.race_date = ?race_date";
                                     if (w.PlcAmount > 0)
                                     {
                                         double O = 1 + (w.Percent / 100) / (Math.Min(w.PlcLimit / LIMIT_SCALE, sp_p_max) - (w.Percent / 100));
+                                        if (O * (1 - p3[i]) > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            full_plc = true;
+                                            continue;
+                                        }
+
                                         double max_eat = (T * Math.Pow(O * (1 - p3[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - p3[i]) * p3[i]);
                                         max_eat = max_eat / Math.Min(w.PlcLimit / LIMIT_SCALE, sp_p_max);
                                         if (eat_amount_plc >= max_eat)
@@ -1474,7 +1516,15 @@ AND a.race_date = ?race_date";
                                     if (_bet_amount_qn.ContainsKey(horseNo)) bet_amount = _bet_amount_qn[horseNo];
                                     foreach (WaterQnItem w in vlist.OrderBy(x => x.Percent))
                                     {
+                                        if (w.Percent > BET_MAX_DISCOUNT_QN) break;  // 超过水位上限 
+
                                         double O = Math.Min(w.Limit / LIMIT_SCALE, sp_min) * 100 / w.Percent;
+                                        if (O * pq_win[i] > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            break;
+                                        }
+
                                         double max_bet = (T * Math.Pow(O * pq_win[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * pq_win[i] * (1 - pq_win[i]));
 
                                         if (bet_amount >= max_bet)
@@ -1595,7 +1645,14 @@ AND a.race_date = ?race_date";
                                     if (_bet_amount_qn.ContainsKey(horseNo)) eat_amount = -_bet_amount_qn[horseNo];
                                     foreach (WaterQnItem w in vlist.OrderByDescending(x => x.Percent))
                                     {
+                                        if (w.Percent < EAT_MIN_DISCOUNT_QN) break;  // 超过水位下限 
                                         double O = 1 + (w.Percent / 100) / (Math.Min(w.Limit / LIMIT_SCALE, sp_max) - (w.Percent / 100));
+                                        if (O * (1 - pq_win[i]) > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            break;
+                                        }
+
                                         double max_eat = (T * Math.Pow(O * (1 - pq_win[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - pq_win[i]) * pq_win[i]);
                                         max_eat = max_eat / Math.Min(w.Limit / LIMIT_SCALE, sp_max);
                                         if (eat_amount >= max_eat)
@@ -1721,7 +1778,14 @@ AND a.race_date = ?race_date";
                                     if (_bet_amount_qp.ContainsKey(horseNo)) bet_amount = _bet_amount_qp[horseNo];
                                     foreach (WaterQnItem w in vlist.OrderBy(x => x.Percent))
                                     {
+                                        if (w.Percent > BET_MAX_DISCOUNT_QN) break;  // 超过水位上限 
                                         double O = Math.Min(w.Limit / LIMIT_SCALE, sp_min) * 100 / w.Percent;
+                                        if (O * pq_plc[i] > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            break;
+                                        }
+
                                         double max_bet = (T * Math.Pow(O * pq_plc[i] - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * pq_plc[i] * (1 - pq_plc[i]));
 
                                         if (bet_amount >= max_bet)
@@ -1838,7 +1902,14 @@ AND a.race_date = ?race_date";
                                     if (_bet_amount_qp.ContainsKey(horseNo)) eat_amount = -_bet_amount_qp[horseNo];
                                     foreach (WaterQnItem w in vlist.OrderByDescending(x => x.Percent))
                                     {
+                                        if (w.Percent < EAT_MIN_DISCOUNT_QN) break;  // 超过水位下限 
                                         double O = 1 + (w.Percent / 100) / (Math.Min(w.Limit / LIMIT_SCALE, sp_max) - (w.Percent / 100));
+                                        if (O * (1 - pq_plc[i]) > MAX_R)
+                                        {
+                                            // 超过回报率上限
+                                            break;
+                                        }
+
                                         double max_eat = (T * Math.Pow(O * (1 - pq_plc[i]) - 1, 2)) / (LOSS_RATE_COEFFICIENT * Math.Pow(O, 2) * (1 - pq_plc[i]) * pq_plc[i]);
                                         max_eat = max_eat / Math.Min(w.Limit / LIMIT_SCALE, sp_max);
                                         if (eat_amount >= max_eat)
