@@ -101,15 +101,15 @@ AND a.race_date = ?race_date";
                 }
             }
 
-            this.Log("main", "0", string.Format("加载获得{0}个比赛", _handlers.Count));
+            this.Log("main", "0", string.Format("加载获得{0}个比赛", _handlers.Count), null);
         }
 
         void rh_Process(FormBet.RaceHandler sender, FormBet.RaceProcessEventArgs e)
         {
-            this.Log(sender.RaceName, ((int)sender.StartTime.Subtract(DateTime.Now).TotalSeconds).ToString(), e.Description);
+            this.Log(sender.RaceName, ((int)sender.StartTime.Subtract(DateTime.Now).TotalSeconds).ToString(), e.Description, e.Detail);
         }
 
-        void Log(string source, string countdown, string description)
+        void Log(string source, string countdown, string description, string detail)
         {
             lock (this)
             {
@@ -118,6 +118,10 @@ AND a.race_date = ?race_date";
                     using (System.IO.StreamWriter sw = new System.IO.StreamWriter(fs))
                     {
                         sw.WriteLine("{0:HH:mm:ss}:{1},{2},{3}", DateTime.Now, source, countdown, description);
+                        if (detail != null)
+                        {
+                            sw.WriteLine(detail);
+                        }
                     }
                 }
             }
@@ -228,6 +232,7 @@ AND a.race_date = ?race_date";
         public class RaceProcessEventArgs : EventArgs
         {
             public string Description { get; set; }
+            public string Detail { get; set; }
         }
 
         public delegate void RaceProcessEventHandler(RaceHandler sender, RaceProcessEventArgs e);
@@ -316,7 +321,7 @@ AND a.race_date = ?race_date";
             public double QN_STEP { get; set; }
             public int ODDS_MODE { get; set; }
             public double LIMIT_SCALE { get; set; }
-            private const int MODEL = 107;
+            private const int MODEL = 108;
 
             private static DateTime UNIXTIME_BASE = new DateTime(1970, 1, 1, 8, 0, 0);
 
@@ -368,7 +373,7 @@ AND a.race_date = ?race_date";
                         catch (ThreadAbortException) { }
                         catch (Exception ex)
                         {
-                            this.OnProcess(new RaceProcessEventArgs() { Description = "下单线程错误：" + ex.ToString() });
+                            this.OnProcess(new RaceProcessEventArgs() { Description = "下单线程错误：" + ex.Message, Detail = ex.ToString() });
                         }
                         finally
                         {
@@ -518,7 +523,7 @@ AND a.race_date = ?race_date";
                 }
                 catch (Exception ex)
                 {
-                    this.OnProcess(new RaceProcessEventArgs() { Description = "守护线程错误：" + ex.ToString() });
+                    this.OnProcess(new RaceProcessEventArgs() { Description = "守护线程错误：" + ex.Message, Detail = ex.ToString() });
                 }
                 finally
                 {
@@ -559,7 +564,7 @@ AND a.race_date = ?race_date";
                 catch (ThreadAbortException) { }
                 catch (Exception ex)
                 {
-                    this.OnProcess(new RaceProcessEventArgs() { Description = "拟合线程错误：" + ex.ToString() });
+                    this.OnProcess(new RaceProcessEventArgs() { Description = "拟合线程错误：" + ex.Message, Detail = ex.ToString() });
                 }
                 finally
                 {
@@ -2419,14 +2424,121 @@ SELECT LAST_INSERT_ID()
                 batch.Clear();
             }
 
+            private static string[] __accounts__ = new string[] { "cttjoag03ur03", "cttjoag03ur04" }; 
+
             private bool orderApi(OrderWp order)
             {
-                return true;
+                string account = __accounts__[order.ID % __accounts__.Length];
+
+                List<string> parameters = new List<string>();
+                parameters.Add("acc_name=" + account);
+                parameters.Add("acc_channel=CT");
+                parameters.Add("race_type=" + order.RaceType);
+                parameters.Add("race_date=" + order.RaceDate);
+                parameters.Add("race_no=" + order.RaceNo.ToString());
+                parameters.Add("horse_no=" + order.HorseNo);
+                parameters.Add("direction=" + order.Direction);
+                parameters.Add("percent=" + order.Percent.ToString());
+                parameters.Add("im_order=1");
+                if (order.WinLimit > 0 && order.PlcLimit == 0)
+                {
+                    parameters.Add("amount1=" + order.Amount.ToString());
+                    parameters.Add("limit1=" + order.WinLimit.ToString());
+                    parameters.Add("amount2=0");
+                    parameters.Add("limit2=0");
+                    parameters.Add("wptck=0");
+                    parameters.Add("wtck=1");
+                    parameters.Add("ptck=0");
+                }
+                else if (order.PlcLimit > 0)
+                {
+                    parameters.Add("amount1=0");
+                    parameters.Add("limit1=0");
+                    parameters.Add("amount2=" + order.Amount.ToString());
+                    parameters.Add("limit2=" + order.PlcLimit.ToString());
+                    parameters.Add("wptck=0");
+                    parameters.Add("wtck=0");
+                    parameters.Add("ptck=1");
+                }
+                else
+                {
+                    parameters.Add("amount1=" + order.Amount.ToString());
+                    parameters.Add("limit1=" + order.WinLimit.ToString());
+                    parameters.Add("amount2=" + order.Amount.ToString());
+                    parameters.Add("limit2=" + order.PlcLimit.ToString());
+                    parameters.Add("wptck=1");
+                    parameters.Add("wtck=0");
+                    parameters.Add("ptck=0");
+                }
+
+                string url, response;
+                url = string.Format("http://120.24.210.35:3000/biz/trading/order_wp?{0}", string.Join("&", parameters.ToArray()));
+                response = callApi(url);
+                if (response != null)
+                {
+                    JObject jo = (JObject)JsonConvert.DeserializeObject(response);
+                    if (jo != null && (string)jo["STS"] == "OK")
+                    {
+                        this.OnProcess(new RaceProcessEventArgs()
+                        {
+                            Description = string.Format("实际下单成功：{0}-{1} {2}: {3}%*{4}({5}/{6})", order.RaceNo, order.Direction, order.HorseNo, order.Percent, order.Amount, order.WinLimit, order.PlcLimit),
+                            Detail = string.Format("url: {0}\nresponse: {1}", url, response)
+                        });
+                        return true;
+                    }
+                }
+
+                this.OnProcess(new RaceProcessEventArgs()
+                {
+                    Description = string.Format("实际下单失败：{0}-{1} {2}: {3}%*{4}({5}/{6})", order.RaceNo, order.Direction, order.HorseNo, order.Percent, order.Amount, order.WinLimit, order.PlcLimit),
+                    Detail = string.Format("url: {0}\nresponse: {1}", url, response)
+                });
+                return false;
             }
 
             private bool orderApi(OrderQn order)
             {
-                return true;
+                string account = __accounts__[order.ID % __accounts__.Length];
+
+                List<string> parameters = new List<string>();
+                parameters.Add("acc_name=" + account);
+                parameters.Add("acc_channel=CT");
+                parameters.Add("race_type=" + order.RaceType);
+                parameters.Add("race_date=" + order.RaceDate);
+                parameters.Add("race_no=" + order.RaceNo.ToString());
+                parameters.Add("horse_arr=" + order.HorseNo.Replace('-', '|'));
+                parameters.Add("combo=0");
+                parameters.Add("fc_type=" + (order.Type == "Q" ? "0" : "1"));
+                parameters.Add("direction=" + order.Direction);
+                parameters.Add("amount=" + order.Amount.ToString());
+                parameters.Add("percent=" + order.Percent.ToString());
+                parameters.Add("limit=" + order.Limit.ToString());
+                parameters.Add("im_order=1");
+
+                string url, response;
+                url = string.Format("http://120.24.210.35:3000/biz/trading/order_qn?{0}", string.Join("&", parameters.ToArray()));
+                response = callApi(url);
+
+                if (response != null)
+                {
+                    JObject jo = (JObject)JsonConvert.DeserializeObject(response);
+                    if (jo != null && (string)jo["STS"] == "OK")
+                    {
+                        this.OnProcess(new RaceProcessEventArgs()
+                        {
+                            Description = string.Format("实际下单成功：{0}-{1} {2} {3}: {4}%*{5}({6})", order.RaceNo, order.Direction, order.Type, order.HorseNo, order.Percent, order.Amount, order.Limit),
+                            Detail = string.Format("url: {0}\nresponse: {1}", url, response)
+                        });
+                        return true;
+                    }
+                }
+
+                this.OnProcess(new RaceProcessEventArgs()
+                {
+                    Description = string.Format("实际下单失败：{0}-{1} {2} {3}: {4}%*{5}({6})", order.RaceNo, order.Direction, order.Type, order.HorseNo, order.Percent, order.Amount, order.Limit),
+                    Detail = string.Format("url: {0}\nresponse: {1}", url, response)
+                });
+                return false;
             }
 
             private double cross_entropy(double[] p, double[] q)
@@ -2843,6 +2955,18 @@ SELECT LAST_INSERT_ID()
                         {
                             return null;
                         }
+                    }
+                }
+            }
+
+            public static string callApi(string url)
+            {
+                System.Net.WebClient wc = new System.Net.WebClient();
+                using (System.IO.Stream s = wc.OpenRead(url))
+                {
+                    using (System.IO.StreamReader sr = new System.IO.StreamReader(s))
+                    {
+                        return sr.ReadToEnd();
                     }
                 }
             }
